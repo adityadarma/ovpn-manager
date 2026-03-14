@@ -8,8 +8,8 @@ const taskRoutes: FastifyPluginAsync = async (app) => {
     { onRequest: [app.authenticate], schema: { tags: ['tasks'], summary: 'List all tasks', security: [{ bearerAuth: [] }] } },
     async (request) => {
       const query = request.query as { nodeId?: string; status?: string }
-      const builder = app.db('tasks t')
-        .join('vpn_nodes n', 't.node_id', 'n.id')
+      const builder = app.db('tasks as t')
+        .join('vpn_nodes as n', 't.node_id', 'n.id')
         .select('t.*', 'n.hostname as node_hostname')
         .orderBy('t.created_at', 'desc')
         .limit(100)

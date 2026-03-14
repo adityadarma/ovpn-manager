@@ -24,6 +24,18 @@ export function createDb(config: DbConfig): Knex {
 
   const type = config.type
 
+  const TS_EXTENSIONS = {
+    directory: path.join(__dirname, 'migrations'),
+    extension: 'ts',
+    loadExtensions: ['.ts'],
+  }
+
+  const TS_SEEDS = {
+    directory: path.join(__dirname, 'seeds'),
+    extension: 'ts',
+    loadExtensions: ['.ts'],
+  }
+
   let knexConfig: Knex.Config
 
   if (type === 'postgres') {
@@ -31,12 +43,16 @@ export function createDb(config: DbConfig): Knex {
       client: 'pg',
       connection: config.url,
       pool: { min: 2, max: 10 },
+      migrations: TS_EXTENSIONS,
+      seeds: TS_SEEDS,
     }
   } else if (type === 'mysql') {
     knexConfig = {
       client: 'mysql2',
       connection: config.url,
       pool: { min: 2, max: 10 },
+      migrations: TS_EXTENSIONS,
+      seeds: TS_SEEDS,
     }
   } else {
     // SQLite: always stored at <monorepo-root>/data/ovpn.sqlite unless overridden
@@ -46,6 +62,8 @@ export function createDb(config: DbConfig): Knex {
       client: 'better-sqlite3',
       connection: { filename: sqlitePath },
       useNullAsDefault: true,
+      migrations: TS_EXTENSIONS,
+      seeds: TS_SEEDS,
     }
   }
 

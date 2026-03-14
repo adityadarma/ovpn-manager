@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import crypto from 'node:crypto'
 
 interface Network {
   id: string
@@ -60,7 +61,9 @@ const networkRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ error: 'Invalid CIDR format (e.g. 10.0.1.0/24)' })
       }
 
-      const [id] = await app.db('networks').insert({
+      const id = crypto.randomUUID()
+      await app.db('networks').insert({
+        id,
         name: name.trim(),
         cidr: cidr.trim(),
         description: description?.trim() ?? null,

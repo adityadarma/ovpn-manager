@@ -6,6 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
     table.uuid('node_id').notNullable().references('id').inTable('vpn_nodes').onDelete('CASCADE')
     table.string('vpn_ip', 45).notNullable()
+    table.string('real_ip', 45).nullable()
     table.bigInteger('bytes_sent').notNullable().defaultTo(0)
     table.bigInteger('bytes_received').notNullable().defaultTo(0)
     table.timestamp('connected_at').notNullable().defaultTo(knex.fn.now())

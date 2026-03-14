@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import crypto from 'node:crypto'
 import { CreatePolicySchema } from '@ovpn/shared'
 
 const policyRoutes: FastifyPluginAsync = async (app) => {
@@ -15,8 +16,9 @@ const policyRoutes: FastifyPluginAsync = async (app) => {
     { onRequest: [app.authenticateAdmin], schema: { tags: ['policies'], summary: 'Create a network policy', security: [{ bearerAuth: [] }] } },
     async (request, reply) => {
       const input = CreatePolicySchema.parse(request.body)
-
-      const [id] = await app.db('vpn_policies').insert({
+      const id = crypto.randomUUID()
+      await app.db('vpn_policies').insert({
+        id,
         user_id: input.userId,
         allowed_network: input.allowedNetwork,
         action: input.action ?? 'allow',

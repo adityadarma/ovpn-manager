@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { CreateUserSchema, UpdateUserSchema } from '@ovpn/shared'
 
@@ -40,7 +41,10 @@ const userRoutes: FastifyPluginAsync = async (app) => {
 
       const passwordHash = await bcrypt.hash(input.password, 12)
 
-      const [id] = await app.db('users').insert({
+      const id = crypto.randomUUID()
+
+      await app.db('users').insert({
+        id,
         username: input.username,
         email: input.email ?? null,
         password_hash: passwordHash,

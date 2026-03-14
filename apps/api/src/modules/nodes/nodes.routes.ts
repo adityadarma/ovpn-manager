@@ -29,8 +29,10 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const input = RegisterNodeSchema.parse(request.body)
       const token = crypto.randomBytes(32).toString('hex')
+      const id = crypto.randomUUID()
 
-      const [id] = await app.db('vpn_nodes').insert({
+      await app.db('vpn_nodes').insert({
+        id,
         hostname: input.hostname,
         ip_address: input.ip,
         port: input.port ?? 1194,

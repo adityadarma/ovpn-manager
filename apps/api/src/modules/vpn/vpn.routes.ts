@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
 
 /**
@@ -71,11 +72,14 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Log audit
+      const logId = crypto.randomUUID()
       await app.db('audit_logs').insert({
+        id: logId,
         user_id: user.id,
         action: 'vpn_auth_success',
-        details: JSON.stringify({ node_id: node_id ?? null }),
-        ip_address: request.ip,
+        resource: 'vpn_auth',
+        resource_id: node_id ?? null,
+        ip: request.ip,
         created_at: new Date(),
       }).catch(() => { /* non-fatal */ })
 
@@ -118,8 +122,9 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
         .where({ user_id: user.id })
         .whereNull('disconnected_at')
         .update({ disconnected_at: new Date() })
-
-      const [sessionId] = await app.db('vpn_sessions').insert({
+      const sessionId = crypto.randomUUID()
+      await app.db('vpn_sessions').insert({
+        id: sessionId,
         user_id: user.id,
         node_id: node.id,
         vpn_ip,
@@ -132,15 +137,15 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
       app.log.info(`[vpn/connect] ${username} connected — session ${sessionId}, IP ${vpn_ip}`)
 
       // Get user's policy networks for route push (response to agent)
-      const networks = await app.db('policies as p')
+      const networks = await app.db('vpn_policies as p')
         .join('users as u', 'p.user_id', 'u.id')
         .where('p.user_id', user.id)
         .where('p.action', 'allow')
-        .select('p.network_cidr')
+        .select('p.allowed_network')
 
       return reply.status(201).send({
         session_id: sessionId,
-        push_routes: networks.map((n: { network_cidr: string }) => n.network_cidr),
+        push_routes: networks.map((n: { allowed_network: string }) => n.allowed_network),
         static_ip: user.static_vpn_ip ?? null,
       })
     },

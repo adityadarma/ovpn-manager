@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import crypto from 'node:crypto'
 
 interface Group {
   id: string
@@ -60,7 +61,9 @@ const groupRoutes: FastifyPluginAsync = async (app) => {
       const { name, description } = request.body
       if (!name?.trim()) return reply.status(400).send({ error: 'name is required' })
 
-      const [id] = await app.db('groups').insert({
+      const id = crypto.randomUUID()
+      await app.db('groups').insert({
+        id,
         name: name.trim(),
         description: description?.trim() ?? null,
       })
