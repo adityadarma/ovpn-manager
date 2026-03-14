@@ -4,7 +4,7 @@ RUN corepack enable
 
 WORKDIR /app
 # Copy the whole monorepo to build
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/agent ./apps/agent
 COPY packages/shared ./packages/shared
 # (Assuming shared is heavily used, better to bring related packages)

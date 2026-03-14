@@ -3,7 +3,7 @@ RUN npm install -g pnpm
 
 FROM base AS builder
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 COPY apps/web/package.json ./apps/web/

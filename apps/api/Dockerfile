@@ -3,8 +3,9 @@ RUN npm install -g pnpm
 
 # Builder stage
 FROM base AS builder
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/db/package.json ./packages/db/
 COPY apps/api/package.json ./apps/api/
