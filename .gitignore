@@ -7,10 +7,17 @@ node_modules
 dist
 build
 .next
+.next/
+**/.next
+**/.next/
+apps/web/.next
+apps/web/.next/
 out
 
 # Turbo
 .turbo
+*.tsbuildinfo
+.eslintcache
 
 # Environment
 .env
@@ -36,3 +43,15 @@ Thumbs.db
 .idea
 *.swp
 *.swo
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Deployment & Hosting
+.vercel/
+.npm/
+
+# Package manager state
+.pnpm-state
+pnpm-lock.yaml.bak

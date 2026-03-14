@@ -11,6 +11,17 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,54 +32,74 @@ const NAV_ITEMS = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
-export function Sidebar() {
+export function AppSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-gray-900 text-white flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-sm">
-            OVPN
-          </div>
-          <span className="font-semibold text-lg">VPN Manager</span>
-        </div>
-      </div>
+    <Sidebar collapsible="icon">
+      {/* Brand */}
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="pointer-events-none">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                <Shield className="size-4" />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">OVPN Admin</span>
+                <span className="truncate text-xs text-muted-foreground">VPN Management</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href) && (href !== '/dashboard' || pathname === '/dashboard')
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
-                ? 'bg-emerald-600 text-white'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+      {/* Nav */}
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                const active = pathname.startsWith(href) && (href !== '/dashboard' || pathname === '/dashboard')
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      id={`nav-link-${href.replace(/[^a-z0-9]/g, '-')}`}
+                      isActive={active}
+                      tooltip={label}
+                      render={<Link href={href} />}
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Footer / Logout */}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              id="nav-link-logout"
+              tooltip="Logout"
+              className="text-red-500 hover:bg-red-50 hover:text-red-600 data-active:bg-red-50 data-active:text-red-600"
+              onClick={() => {
+                document.cookie = 'ovpn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+                localStorage.removeItem('ovpn-auth')
+                window.location.href = '/login'
+              }}
             >
-              <Icon size={18} />
-              {label}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* Logout */}
-      <div className="p-4 border-t border-gray-700">
-        <button
-          onClick={() => {
-            localStorage.removeItem('ovpn_token')
-            window.location.href = '/login'
-          }}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white w-full transition-colors"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
-      </div>
-    </aside>
+              <LogOut />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   )
 }

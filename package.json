@@ -15,10 +15,10 @@
     "db:rollback": "pnpm --filter @ovpn/db rollback"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.3",
+    "@types/node": "^24.12.0",
     "prettier": "^3.5.3",
-    "@types/node": "^22.13.10"
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=20.0.0",

@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const PROTECTED = ['/dashboard', '/users', '/nodes', '/sessions', '/policies', '/settings']
 const PUBLIC = ['/login']
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Get token from cookie (we'll also set it there on login)
