@@ -1,17 +1,32 @@
 import type { AgentEnv } from '../config/env'
+import fs from 'node:fs/promises'
 
 export function startHeartbeat(env: AgentEnv): void {
   console.log(`💓 Heartbeat started (interval: ${env.AGENT_HEARTBEAT_INTERVAL_MS}ms)`)
 
   const beat = async () => {
     try {
+      let caCert: string | undefined
+      let taKey: string | undefined
+
+      try {
+        caCert = await fs.readFile('/etc/openvpn/server/ca.crt', 'utf8')
+        taKey = await fs.readFile('/etc/openvpn/server/ta.key', 'utf8')
+      } catch (e) {
+        // Silently fail, it might be running outside the VPN node temporarily or path doesn't exist
+      }
+
       const res = await fetch(`${env.AGENT_MANAGER_URL}/api/v1/nodes/heartbeat`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.AGENT_SECRET_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nodeId: env.AGENT_NODE_ID }),
+        body: JSON.stringify({ 
+          nodeId: env.AGENT_NODE_ID,
+          caCert,
+          taKey
+        }),
       })
 
       if (!res.ok) {

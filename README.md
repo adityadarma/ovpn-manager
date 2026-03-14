@@ -61,7 +61,7 @@ ovpn-platform/
 ## 🚀 Quick Start (Development)
 
 ### Prerequisites
-- **Node.js**: >= 20.x
+- **Node.js**: >= 24.x
 - **Package Manager**: pnpm >= 9.x
 - (Optional) Docker for running Postgres/MySQL locally.
 

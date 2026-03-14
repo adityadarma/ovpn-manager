@@ -1,21 +1,26 @@
-FROM node:20-alpine AS base
-RUN npm install -g pnpm
+FROM node:24-alpine AS builder
+# Enable pnpm
+RUN corepack enable
 
-FROM base AS builder
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml turbo.json ./
-COPY packages/shared/package.json ./packages/shared/
-COPY apps/agent/package.json ./apps/agent/
-RUN pnpm install --frozen-lockfile
-
-COPY packages/shared ./packages/shared
+# Copy the whole monorepo to build
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/agent ./apps/agent
+COPY packages/shared ./packages/shared
+# (Assuming shared is heavily used, better to bring related packages)
+
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @ovpn/agent build
 
-FROM node:20-alpine AS runner
+# Production image
+FROM node:24-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+
+# Only copy what's necessary to run
 COPY --from=builder /app/apps/agent/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-EXPOSE 3002
+COPY --from=builder /app/apps/agent/node_modules ./apps/agent/node_modules
+COPY --from=builder /app/apps/agent/package.json ./
+
+# Start daemon
 CMD ["node", "dist/index.js"]

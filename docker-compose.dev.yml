@@ -1,7 +1,7 @@
 services:
   # Development API — hot-reload with tsx watch
   api:
-    image: node:20-alpine
+    image: node:24-alpine
     working_dir: /app
     command: sh -c "npm install -g pnpm && pnpm install && pnpm --filter @ovpn/api dev"
     environment:
@@ -24,7 +24,7 @@ services:
 
   # Development Web UI — Next.js dev server
   web:
-    image: node:20-alpine
+    image: node:24-alpine
     working_dir: /app
     command: sh -c "npm install -g pnpm && pnpm install && pnpm --filter @ovpn/web dev"
     environment:
