@@ -47,7 +47,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
         id,
         username: input.username,
         email: input.email ?? null,
-        password_hash: passwordHash,
+        password: passwordHash,
         role: input.role ?? 'user',
         is_active: true,
       })
@@ -81,7 +81,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
       }
 
       if (input.password) {
-        updates['password_hash'] = await bcrypt.hash(input.password, 12)
+        updates['password'] = await bcrypt.hash(input.password, 12)
       }
 
       await app.db('users').where({ id }).update(updates)

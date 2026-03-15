@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/auth.store'
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +13,8 @@ import {
   LogOut,
   Network,
   UsersRound,
+  UserCircle,
+  ChevronsUpDown,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -24,6 +27,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -38,6 +48,14 @@ const NAV_ITEMS = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const user = useAuthStore((s) => s.user)
+
+  const handleLogout = () => {
+    document.cookie = 'ovpn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+    localStorage.removeItem('ovpn-auth')
+    window.location.href = '/login'
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -84,23 +102,43 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer / Logout */}
+      {/* Footer / User Menu */}
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              id="nav-link-logout"
-              tooltip="Logout"
-              className="text-red-500 hover:bg-red-50 hover:text-red-600 data-active:bg-red-50 data-active:text-red-600"
-              onClick={() => {
-                document.cookie = 'ovpn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
-                localStorage.removeItem('ovpn-auth')
-                window.location.href = '/login'
-              }}
-            >
-              <LogOut />
-              <span>Logout</span>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                    <UserCircle className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user?.username ?? 'User'}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user?.email ?? 'No email'}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side="bottom"
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

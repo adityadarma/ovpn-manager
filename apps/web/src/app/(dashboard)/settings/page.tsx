@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 import { toast } from 'sonner'
-import { Save, User, Settings, AlertCircle } from 'lucide-react'
+import { Save, Settings, AlertCircle } from 'lucide-react'
 
 interface Setting {
   key: string
@@ -47,31 +47,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your account and platform configuration</p>
-      </div>
-
-      {/* Account Info */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <User className="h-4 w-4 text-gray-400" />
-          <h2 className="font-semibold text-gray-900">Account</h2>
-        </div>
-        <div className="p-5">
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Username</label>
-              <p className="font-medium text-gray-900">{mounted ? (user?.username ?? '—') : '—'}</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Role</label>
-              <p className="font-medium text-gray-900 capitalize">{mounted ? (user?.role ?? '—') : '—'}</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
-              <p className="font-medium text-gray-900">{mounted ? (user?.email ?? 'Not set') : 'Not set'}</p>
-            </div>
-          </div>
-        </div>
+        <p className="text-sm text-gray-500 mt-1">Platform configuration</p>
       </div>
 
       {/* Platform Settings */}

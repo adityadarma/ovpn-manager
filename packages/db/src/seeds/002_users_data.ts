@@ -13,7 +13,7 @@ export async function seed(knex: Knex): Promise<void> {
     await knex('users').insert({
       username: 'admin',
       email: 'admin@ovpn.local',
-      password_hash: passwordHash,
+      password: passwordHash,
       role: 'admin',
       is_active: true,
     })

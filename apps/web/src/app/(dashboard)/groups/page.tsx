@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { Plus, Trash2, Users, Network, Pencil, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Users, Network, Pencil, ChevronRight, UserPlus, NetworkIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface Group {
   id: string
@@ -47,6 +54,21 @@ interface GroupDetail extends Group {
   networks: Array<{ id: string; name: string; cidr: string }>
 }
 
+interface User {
+  id: string
+  username: string
+  email: string | null
+  role: string
+  is_active: boolean
+}
+
+interface NetworkItem {
+  id: string
+  name: string
+  cidr: string
+  description: string | null
+}
+
 interface FormState { name: string; description: string }
 
 export default function GroupsPage() {
@@ -55,6 +77,10 @@ export default function GroupsPage() {
   const [editGroup, setEditGroup] = useState<Group | null>(null)
   const [detailGroup, setDetailGroup] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>({ name: '', description: '' })
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [showAddNetwork, setShowAddNetwork] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null)
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
     queryKey: ['groups'],
@@ -65,6 +91,16 @@ export default function GroupsPage() {
     queryKey: ['groups', detailGroup],
     queryFn: () => api.get(`/api/v1/groups/${detailGroup}`),
     enabled: !!detailGroup,
+  })
+
+  const { data: allUsers = [] } = useQuery<User[]>({
+    queryKey: ['users'],
+    queryFn: () => api.get('/api/v1/users'),
+  })
+
+  const { data: allNetworks = [] } = useQuery<NetworkItem[]>({
+    queryKey: ['networks'],
+    queryFn: () => api.get('/api/v1/networks'),
   })
 
   const createMutation = useMutation({
@@ -99,10 +135,64 @@ export default function GroupsPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const addMemberMutation = useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+      api.post(`/api/v1/groups/${groupId}/members`, { user_id: userId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      setShowAddMember(false)
+      setSelectedUserId(null)
+      toast.success('Member added to group')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const removeMemberMutation = useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+      api.delete(`/api/v1/groups/${groupId}/members/${userId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      toast.success('Member removed from group')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const addNetworkMutation = useMutation({
+    mutationFn: ({ groupId, networkId }: { groupId: string; networkId: string }) =>
+      api.post(`/api/v1/groups/${groupId}/networks`, { network_id: networkId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      setShowAddNetwork(false)
+      setSelectedNetworkId(null)
+      toast.success('Network assigned to group')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const removeNetworkMutation = useMutation({
+    mutationFn: ({ groupId, networkId }: { groupId: string; networkId: string }) =>
+      api.delete(`/api/v1/groups/${groupId}/networks/${networkId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      toast.success('Network removed from group')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   const openEdit = (g: Group) => {
     setEditGroup(g)
     setForm({ name: g.name, description: g.description ?? '' })
   }
+
+  // Filter users that are not already in the group
+  const availableUsers = allUsers.filter(
+    u => !groupDetail?.members.some(m => m.id === u.id)
+  )
+
+  // Filter networks that are not already assigned to the group
+  const availableNetworks = allNetworks.filter(
+    n => !groupDetail?.networks.some(net => net.id === n.id)
+  )
 
   return (
     <div className="space-y-6">
@@ -190,12 +280,22 @@ export default function GroupsPage() {
         {detailGroup && groupDetail && (
           <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Members
-                  <Badge className="ml-auto">{groupDetail.members.length}</Badge>
+                  <Badge className="ml-2">{groupDetail.members.length}</Badge>
                 </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => setShowAddMember(true)}
+                  disabled={availableUsers.length === 0}
+                >
+                  <UserPlus className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 {groupDetail.members.length === 0 ? (
@@ -214,6 +314,14 @@ export default function GroupsPage() {
                         <Badge variant={m.is_active ? 'default' : 'secondary'} className="text-xs">
                           {m.is_active ? 'active' : 'inactive'}
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => removeMemberMutation.mutate({ groupId: detailGroup, userId: m.id })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -222,12 +330,22 @@ export default function GroupsPage() {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Network className="h-4 w-4" />
                   Networks
-                  <Badge className="ml-auto">{groupDetail.networks.length}</Badge>
+                  <Badge className="ml-2">{groupDetail.networks.length}</Badge>
                 </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => setShowAddNetwork(true)}
+                  disabled={availableNetworks.length === 0}
+                >
+                  <NetworkIcon className="h-3.5 w-3.5 mr-1" />
+                  Add
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 {groupDetail.networks.length === 0 ? (
@@ -235,9 +353,19 @@ export default function GroupsPage() {
                 ) : (
                   <div className="divide-y">
                     {groupDetail.networks.map(n => (
-                      <div key={n.id} className="px-4 py-2.5">
-                        <p className="text-sm font-medium">{n.name}</p>
-                        <code className="text-xs text-muted-foreground">{n.cidr}</code>
+                      <div key={n.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{n.name}</p>
+                          <code className="text-xs text-muted-foreground">{n.cidr}</code>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => removeNetworkMutation.mutate({ groupId: detailGroup, networkId: n.id })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -321,6 +449,80 @@ export default function GroupsPage() {
               onClick={() => editGroup && updateMutation.mutate({ id: editGroup.id, data: form })}
             >
               {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Member Dialog */}
+      <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Member to Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="select-user">Select User</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger id="select-user">
+                  <SelectValue placeholder="Choose a user..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.username} {u.email ? `(${u.email})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAddMember(false); setSelectedUserId(null) }}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!selectedUserId || addMemberMutation.isPending}
+              onClick={() => detailGroup && selectedUserId && addMemberMutation.mutate({ groupId: detailGroup, userId: selectedUserId })}
+            >
+              {addMemberMutation.isPending ? 'Adding...' : 'Add Member'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Network Dialog */}
+      <Dialog open={showAddNetwork} onOpenChange={setShowAddNetwork}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Network to Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="select-network">Select Network</Label>
+              <Select value={selectedNetworkId} onValueChange={setSelectedNetworkId}>
+                <SelectTrigger id="select-network">
+                  <SelectValue placeholder="Choose a network..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableNetworks.map(n => (
+                    <SelectItem key={n.id} value={n.id}>
+                      {n.name} ({n.cidr})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAddNetwork(false); setSelectedNetworkId(null) }}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!selectedNetworkId || addNetworkMutation.isPending}
+              onClick={() => detailGroup && selectedNetworkId && addNetworkMutation.mutate({ groupId: detailGroup, networkId: selectedNetworkId })}
+            >
+              {addNetworkMutation.isPending ? 'Assigning...' : 'Assign Network'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -40,7 +40,7 @@ export default function LoginPage() {
 
       const data = await res.json() as {
         token?: string
-        user?: { id: string; username: string; email: string | null; role: string }
+        user?: { id: string; username: string; email: string | null; role: string; lastLogin?: string }
         message?: string
       }
 

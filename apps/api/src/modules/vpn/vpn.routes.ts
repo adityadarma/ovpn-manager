@@ -65,7 +65,7 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(403).send({ error: 'Account expired' })
       }
 
-      const passwordMatch = await bcrypt.compare(password, user.password_hash)
+      const passwordMatch = await bcrypt.compare(password, user.password)
       if (!passwordMatch) {
         app.log.warn(`[vpn/auth] Bad password for user: ${username}`)
         return reply.status(401).send({ error: 'Invalid credentials' })

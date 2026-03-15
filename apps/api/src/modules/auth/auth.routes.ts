@@ -32,13 +32,14 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid credentials' })
       }
 
-      const validPassword = await bcrypt.compare(password, user.password_hash)
+      const validPassword = await bcrypt.compare(password, user.password)
       if (!validPassword) {
         return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid credentials' })
       }
 
       // Update last_login
-      await app.db('users').where({ id: user.id }).update({ last_login: new Date() })
+      const now = new Date()
+      await app.db('users').where({ id: user.id }).update({ last_login: now })
 
       const token = app.jwt.sign({
         id: user.id,
@@ -53,6 +54,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           username: user.username,
           email: user.email,
           role: user.role,
+          lastLogin: now.toISOString(),
         },
       }
     },
@@ -76,6 +78,50 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         .where({ id: payload.id })
         .first()
       return user
+    },
+  )
+
+  // POST /api/v1/auth/change-password
+  app.post<{ Body: { currentPassword: string; newPassword: string } }>(
+    '/auth/change-password',
+    {
+      onRequest: [app.authenticate],
+      schema: {
+        tags: ['auth'],
+        summary: 'Change current user password',
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['currentPassword', 'newPassword'],
+          properties: {
+            currentPassword: { type: 'string' },
+            newPassword: { type: 'string', minLength: 6 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { currentPassword, newPassword } = request.body
+      const payload = request.user as { id: string }
+
+      const user = await app.db('users').where({ id: payload.id }).first()
+      if (!user) {
+        return reply.status(404).send({ error: 'Not Found', message: 'User not found' })
+      }
+
+      const validPassword = await bcrypt.compare(currentPassword, user.password)
+      if (!validPassword) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Current password is incorrect' })
+      }
+
+      if (newPassword.length < 6) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'New password must be at least 6 characters' })
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12)
+      await app.db('users').where({ id: payload.id }).update({ password: hashedPassword, updated_at: new Date() })
+
+      return { message: 'Password changed successfully' }
     },
   )
 }
