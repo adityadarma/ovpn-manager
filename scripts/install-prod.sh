@@ -112,7 +112,7 @@ configure_env() {
     echo "1) SQLite (default, simplest)"
     echo "2) PostgreSQL (recommended for production)"
     echo "3) MySQL/MariaDB"
-    read -p "Enter choice [1-3] (default: 1): " db_choice
+    read -p "Enter choice [1-3] (default: 1): " db_choice </dev/tty
     db_choice=${db_choice:-1}
     
     case $db_choice in
@@ -124,16 +124,16 @@ configure_env() {
         2)
             DATABASE_TYPE="postgres"
             DATABASE_PROFILE="--profile postgres"
-            read -p "PostgreSQL password (will be generated if empty): " POSTGRES_PASSWORD
+            read -p "PostgreSQL password (will be generated if empty): " POSTGRES_PASSWORD </dev/tty
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-$(generate_secret | tr -d '/')}
             print_success "Using PostgreSQL"
             ;;
         3)
             DATABASE_TYPE="mysql"
             DATABASE_PROFILE="--profile mysql"
-            read -p "MySQL password (will be generated if empty): " MYSQL_PASSWORD
+            read -p "MySQL password (will be generated if empty): " MYSQL_PASSWORD </dev/tty
             MYSQL_PASSWORD=${MYSQL_PASSWORD:-$(generate_secret | tr -d '/')}
-            read -p "MySQL root password (will be generated if empty): " MYSQL_ROOT_PASSWORD
+            read -p "MySQL root password (will be generated if empty): " MYSQL_ROOT_PASSWORD </dev/tty
             MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-$(generate_secret | tr -d '/')}
             print_success "Using MySQL/MariaDB"
             ;;
@@ -145,7 +145,7 @@ configure_env() {
     
     # Get server IP or domain
     SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-    read -p "Enter your server IP or domain (default: $SERVER_IP): " SERVER_DOMAIN
+    read -p "Enter your server IP or domain (default: $SERVER_IP): " SERVER_DOMAIN </dev/tty
     SERVER_DOMAIN=${SERVER_DOMAIN:-$SERVER_IP}
     
     # Create .env file

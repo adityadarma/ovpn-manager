@@ -103,7 +103,19 @@ jobs:
           docker compose pull api web
           docker compose up -d api web
           echo "Waiting for services to be ready..."
-          sleep 30
+          
+          # Wait for API to be healthy (max 2 minutes)
+          for i in {1..24}; do
+            if docker compose ps api | grep -q "healthy"; then
+              echo "API is healthy!"
+              break
+            fi
+            echo "Waiting for API... ($i/24)"
+            sleep 5
+          done
+          
+          # Additional wait for web
+          sleep 10
       
       - name: Check service health
         run: |
