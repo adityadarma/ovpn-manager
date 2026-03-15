@@ -23,5 +23,7 @@ RUN pnpm deploy --filter @ovpn/agent --prod /prod/agent
 FROM node:24-alpine AS runner
 WORKDIR /app
 COPY --from=builder /prod/agent /app
+# Copy built dist from builder
+COPY --from=builder /app/apps/agent/dist /app/dist
 ENV NODE_ENV=production
-CMD ["node", "dist/src/index.js"]
+CMD ["node", "dist/index.js"]

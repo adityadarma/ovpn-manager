@@ -146,6 +146,17 @@ Policies define Access Control Lists (ACL).
 
 The "Agent" acts as the middleman between your central Manager API and the local OpenVPN daemon holding the client connections. We provide an automated installation script that will configure OpenVPN natively on your Linux server (Ubuntu, Debian, CentOS, AlmaLinux, RHEL, etc) and set up routing rules automatically.
 
+### Option 1: One-Line Install (Recommended)
+
+```bash
+# Download and run the VPN server installer
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/vpn-server.sh -o vpn-server.sh
+chmod +x vpn-server.sh
+sudo ./vpn-server.sh install
+```
+
+### Option 2: Manual Install (With Repository)
+
 1. SSH into your actual VPN Server as root.
 2. Clone the repository and run the auto installer:
    ```bash
@@ -154,6 +165,9 @@ The "Agent" acts as the middleman between your central Manager API and the local
    chmod +x scripts/vpn-server.sh
    sudo ./scripts/vpn-server.sh install
    ```
+
+### Connect Agent to Manager
+
 3. Once OpenVPN is installed and running, you must connect it to the central Manager by compiling and running the node agent.
    ```bash
    pnpm install
@@ -171,6 +185,12 @@ The "Agent" acts as the middleman between your central Manager API and the local
    ```
 
 *(For production, we recommend running the agent using `systemd` or `PM2` to ensure it restarts upon failure).*
+
+### Uninstall VPN Server
+
+```bash
+sudo ./vpn-server.sh uninstall
+```
 
 ---
 

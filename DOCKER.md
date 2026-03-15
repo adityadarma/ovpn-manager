@@ -263,6 +263,50 @@ MYSQL_ROOT_PASSWORD=YOUR_ROOT_PASSWORD
 
 The VPN Agent runs on your VPN server node and communicates with the Manager API.
 
+### Step 1: Install OpenVPN Server
+
+First, install OpenVPN on your VPN server using our automated script:
+
+#### Option A: One-Line Install (Recommended)
+
+```bash
+# Download and run the VPN server installer
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/vpn-server.sh -o vpn-server.sh
+chmod +x vpn-server.sh
+sudo ./vpn-server.sh install
+```
+
+#### Option B: Manual Install (With Repository)
+
+```bash
+# Clone repository
+git clone https://github.com/adityadarma/ovpn-platform.git
+cd ovpn-platform
+
+# Run installer
+chmod +x scripts/vpn-server.sh
+sudo ./scripts/vpn-server.sh install
+```
+
+The script will:
+- ✅ Install OpenVPN and dependencies
+- ✅ Generate PKI certificates
+- ✅ Configure server settings
+- ✅ Set up NAT and IP forwarding
+- ✅ Create systemd services
+
+**Supported OS:** Ubuntu, Debian, CentOS, RHEL, Fedora, Rocky Linux, AlmaLinux
+
+#### Uninstall VPN Server
+
+```bash
+sudo ./vpn-server.sh uninstall
+```
+
+---
+
+### Step 2: Deploy Agent Container
+
 ### Production Agent
 
 1. **Register a node via Web UI:**
