@@ -1,6 +1,19 @@
 import { useAuthStore } from '@/store/auth.store'
 
-export const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'
+// Runtime configuration - can be changed without rebuild
+function getApiUrl(): string {
+  // Check if running in browser
+  if (typeof window !== 'undefined') {
+    // Try to get from window.__ENV__ (injected at runtime)
+    const runtimeUrl = (window as any).__ENV__?.NEXT_PUBLIC_API_URL
+    if (runtimeUrl) return runtimeUrl
+  }
+  
+  // Fallback to build-time env or default
+  return process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'
+}
+
+export const API_URL = getApiUrl()
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = useAuthStore.getState().token
