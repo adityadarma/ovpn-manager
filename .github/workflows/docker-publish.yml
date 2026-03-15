@@ -97,6 +97,13 @@ jobs:
           
           # Set test JWT secret
           sed -i 's/CHANGE_ME_TO_SECURE_RANDOM_STRING_MIN_32_CHARS/test-secret-key-for-ci-testing-only-32chars/' .env
+          
+          # Add dummy agent variables to prevent errors (agent won't start without profile)
+          echo "" >> .env
+          echo "# Agent (not used in test)" >> .env
+          echo "AGENT_MANAGER_URL=http://localhost:3001" >> .env
+          echo "AGENT_NODE_ID=test-node-id" >> .env
+          echo "AGENT_SECRET_TOKEN=test-secret-token" >> .env
       
       - name: Start services
         run: |

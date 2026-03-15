@@ -195,6 +195,13 @@ EOF
 # ---- Web UI ----
 WEB_PORT=3000
 NEXT_PUBLIC_API_URL=http://$SERVER_DOMAIN:3001
+
+# ---- Agent (Optional - only needed when running agent) ----
+AGENT_MANAGER_URL=http://$SERVER_DOMAIN:3001
+AGENT_NODE_ID=change-me
+AGENT_SECRET_TOKEN=change-me
+AGENT_POLL_INTERVAL_MS=5000
+AGENT_HEARTBEAT_INTERVAL_MS=30000
 EOF
 
     print_success "Environment configured"
