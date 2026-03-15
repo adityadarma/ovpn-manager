@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  WEB_URL: z.string().optional(),
   DATABASE_TYPE: z.enum(['postgres', 'mysql', 'sqlite']).default('sqlite'),
   DATABASE_URL: z.string().optional(),
   // SQLite path is resolved in @ovpn/db via import.meta.url — no config needed here

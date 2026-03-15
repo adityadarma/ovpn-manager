@@ -98,6 +98,9 @@ jobs:
           # Set test JWT secret
           sed -i 's/CHANGE_ME_TO_SECURE_RANDOM_STRING_MIN_32_CHARS/test-secret-key-for-ci-testing-only-32chars/' .env
           
+          # Set WEB_URL for CORS
+          sed -i 's|WEB_URL=http://localhost:3000|WEB_URL=http://localhost:3000|' .env
+          
           # Add dummy agent variables to prevent errors (agent won't start without profile)
           echo "" >> .env
           echo "# Agent (not used in test)" >> .env

@@ -145,8 +145,22 @@ configure_env() {
     
     # Get server IP or domain
     SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-    read -p "Enter your server IP or domain (default: $SERVER_IP): " SERVER_DOMAIN </dev/tty
+    echo ""
+    echo "Enter your server domain or IP address."
+    echo "This will be used for:"
+    echo "  - Web UI access URL"
+    echo "  - API CORS configuration"
+    echo "  - Client configuration"
+    read -p "Server domain/IP (default: $SERVER_IP): " SERVER_DOMAIN </dev/tty
     SERVER_DOMAIN=${SERVER_DOMAIN:-$SERVER_IP}
+    
+    # Ask for protocol
+    read -p "Use HTTPS? [y/N]: " USE_HTTPS </dev/tty
+    if [[ "$USE_HTTPS" == "y" || "$USE_HTTPS" == "Y" ]]; then
+        PROTOCOL="https"
+    else
+        PROTOCOL="http"
+    fi
     
     # Create .env file
     cat > .env << EOF
@@ -158,6 +172,11 @@ configure_env() {
 # ---- API ----
 API_PORT=3001
 NODE_ENV=production
+
+# ---- CORS ----
+# IMPORTANT: Set this to the URL where users access the Web UI
+# Example: https://vpn.yourdomain.com or http://your-server-ip:3000
+WEB_URL=$PROTOCOL://$SERVER_DOMAIN:3000
 
 # ---- JWT ----
 JWT_SECRET=$JWT_SECRET
@@ -194,7 +213,9 @@ EOF
 
 # ---- Web UI ----
 WEB_PORT=3000
-NEXT_PUBLIC_API_URL=http://$SERVER_DOMAIN:3001
+# IMPORTANT: This should be the full URL where API is accessible from user's browser
+# Example: https://api.yourdomain.com or http://your-server-ip:3001
+NEXT_PUBLIC_API_URL=$PROTOCOL://$SERVER_DOMAIN:3001
 
 # ---- Agent (Optional - only needed when running agent) ----
 AGENT_MANAGER_URL=http://$SERVER_DOMAIN:3001
@@ -235,8 +256,8 @@ EOF
 
     cat >> credentials.txt << EOF
 
-Web UI: http://$SERVER_DOMAIN:3000
-API: http://$SERVER_DOMAIN:3001
+Web UI: $PROTOCOL://$SERVER_DOMAIN:3000
+API: $PROTOCOL://$SERVER_DOMAIN:3001
 
 Default Admin Credentials:
 Username: admin
@@ -341,8 +362,8 @@ print_summary() {
     echo -e "${NC}"
     echo ""
     echo -e "${BLUE}Access Points:${NC}"
-    echo "  Web UI: http://$SERVER_DOMAIN:3000"
-    echo "  API: http://$SERVER_DOMAIN:3001"
+    echo "  Web UI: $PROTOCOL://$SERVER_DOMAIN:3000"
+    echo "  API: $PROTOCOL://$SERVER_DOMAIN:3001"
     echo ""
     echo -e "${BLUE}Default Credentials:${NC}"
     echo "  Username: admin"
@@ -352,7 +373,9 @@ print_summary() {
     echo "  1. Change the default admin password immediately!"
     echo "  2. Review credentials in: $INSTALL_DIR/credentials.txt"
     echo "  3. Delete credentials.txt after saving them securely"
-    echo "  4. Consider setting up SSL/TLS (see PRODUCTION-INSTALL.md)"
+    if [ "$PROTOCOL" = "http" ]; then
+        echo "  4. Consider setting up SSL/TLS with reverse proxy (nginx/caddy)"
+    fi
     echo ""
     echo -e "${BLUE}Useful Commands:${NC}"
     echo "  View logs:    docker compose -f $INSTALL_DIR/docker-compose.yml logs -f"
