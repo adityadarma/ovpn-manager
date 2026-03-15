@@ -9,7 +9,8 @@ services:
       - AGENT_MANAGER_URL=${AGENT_MANAGER_URL}
       - AGENT_NODE_ID=${AGENT_NODE_ID}
       - AGENT_SECRET_TOKEN=${AGENT_SECRET_TOKEN}
-    network_mode: host
+    networks: 
+      - ovpn-network
     cap_add:
       - NET_ADMIN
     devices:
@@ -18,3 +19,7 @@ services:
       # Mount the host's OpenVPN config directory as read-only, so the container can
       # extract `ca.crt` and `ta.key`! (Vital for the config download feature)
       - /etc/openvpn/server:/etc/openvpn/server:ro
+
+networks:
+  ovpn-network:
+    driver: bridge

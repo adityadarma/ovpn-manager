@@ -1,6 +1,7 @@
 import Fastify from 'fastify'
 import { createDb } from '@ovpn/db'
 import type { Env } from './config/env'
+import { NodeStatusChecker } from './services/node-status-checker'
 
 import corsPlugin from './plugins/cors'
 import jwtPlugin from './plugins/jwt'
@@ -58,5 +59,20 @@ export async function buildApp(env: Env) {
     { prefix: '/api/v1' },
   )
 
+  // Start node status checker
+  const nodeStatusChecker = new NodeStatusChecker(
+    db,
+    60000,  // Check every 1 minute
+    120000  // Mark offline after 2 minutes without heartbeat
+  )
+  nodeStatusChecker.start()
+
+  // Cleanup on shutdown
+  app.addHook('onClose', async () => {
+    nodeStatusChecker.stop()
+    await db.destroy()
+  })
+
   return app
 }
+

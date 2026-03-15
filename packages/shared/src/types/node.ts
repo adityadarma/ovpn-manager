@@ -1,4 +1,4 @@
-export type NodeStatus = 'online' | 'offline' | 'unknown'
+export type NodeStatus = 'online' | 'offline'
 
 export interface VpnNode {
   id: string
