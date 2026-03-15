@@ -13,8 +13,8 @@ export default fp(async (app, options: SwaggerPluginOptions) => {
     openapi: {
       openapi: '3.0.0',
       info: {
-        title: 'OVPN API',
-        description: 'OVPN VPN Management Platform API',
+        title: 'OpenVPN Manager API',
+        description: 'OpenVPN Management API',
         version: '1.0.0',
       },
       tags: [

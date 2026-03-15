@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# OVPN Platform - Production Uninstallation Script
+# OpenVPN Manager - Production Uninstallation Script
 # ============================================================
-# This script removes OVPN Platform installation
-# Usage: sudo bash /opt/ovpn-platform/scripts/uninstall-prod.sh
+# This script removes OpenVPN Manager installation
+# Usage: sudo bash /opt/ovpn-manager/scripts/uninstall-prod.sh
 # ============================================================
 
 set -e
@@ -15,12 +15,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-INSTALL_DIR="/opt/ovpn-platform"
+INSTALL_DIR="/opt/ovpn-manager"
 
 print_header() {
     echo -e "${RED}"
     echo "============================================================"
-    echo "  OVPN Platform - Uninstallation"
+    echo "  OpenVPN Manager - Uninstallation"
     echo "============================================================"
     echo -e "${NC}"
 }
@@ -50,7 +50,7 @@ check_root() {
 
 confirm_uninstall() {
     echo ""
-    print_warning "This will remove OVPN Platform and optionally delete all data!"
+    print_warning "This will remove OpenVPN Manager and optionally delete all data!"
     echo ""
     read -p "Are you sure you want to continue? (yes/no): " confirm
     
@@ -96,7 +96,7 @@ remove_images() {
     if [ "$remove_imgs" = "yes" ]; then
         print_info "Removing Docker images..."
         
-        docker rmi $(docker images | grep ovpn-platform | awk '{print $3}') 2>/dev/null || true
+        docker rmi $(docker images | grep ovpn-manager | awk '{print $3}') 2>/dev/null || true
         
         print_success "Images removed"
     else
@@ -181,7 +181,7 @@ print_summary() {
     echo "  - SSL certificates: /etc/letsencrypt/live/yourdomain.com"
     echo ""
     echo -e "${BLUE}To reinstall:${NC}"
-    echo "  curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/install-prod.sh | sudo bash"
+    echo "  curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash"
     echo ""
 }
 

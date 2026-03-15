@@ -1,5 +1,5 @@
 # ============================================================
-# OVPN Platform — Production Docker Compose
+# OpenVPN Manager — Production Docker Compose
 # ============================================================
 # Uses pre-built images from GitHub Container Registry
 #
@@ -68,7 +68,7 @@ services:
   # ── Manager API ──
   api:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-platform:api
+    image: ghcr.io/adityadarma/ovpn-manager:api
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -104,7 +104,7 @@ services:
   # ── Web UI ──
   web:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-platform:web
+    image: ghcr.io/adityadarma/ovpn-manager:web
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -129,7 +129,7 @@ services:
   # ── VPN Agent ──
   agent:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-platform:agent
+    image: ghcr.io/adityadarma/ovpn-manager:agent
     build:
       context: .
       dockerfile: apps/agent/Dockerfile

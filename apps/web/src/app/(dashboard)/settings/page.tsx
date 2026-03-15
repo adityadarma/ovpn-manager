@@ -47,14 +47,14 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Platform configuration</p>
+        <p className="text-sm text-gray-500 mt-1">System configuration</p>
       </div>
 
-      {/* Platform Settings */}
+      {/* System Settings */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <Settings className="h-4 w-4 text-gray-400" />
-          <h2 className="font-semibold text-gray-900">Platform Configuration</h2>
+          <h2 className="font-semibold text-gray-900">System Configuration</h2>
         </div>
         <div className="p-5">
           {!isAdmin && mounted && (
@@ -62,7 +62,7 @@ export default function SettingsPage() {
               <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-amber-800">Read-only access</p>
-                <p className="text-xs text-amber-600 mt-0.5">Only administrators can modify platform settings.</p>
+                <p className="text-xs text-amber-600 mt-0.5">Only administrators can modify system settings.</p>
               </div>
             </div>
           )}

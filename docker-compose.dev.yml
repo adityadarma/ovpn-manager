@@ -1,5 +1,5 @@
 # ============================================================
-# OVPN Platform — Development Docker Compose
+# OpenVPN Manager — Development Docker Compose
 # ============================================================
 # Usage:
 #   docker compose -f docker-compose.dev.yml up

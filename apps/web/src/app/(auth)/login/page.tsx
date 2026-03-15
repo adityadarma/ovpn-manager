@@ -78,7 +78,7 @@ export default function LoginPage() {
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to manage your OVPN infrastructure
+              Sign in to OpenVPN Manager
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,7 +126,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          OVPN Platform v1.0.0
+          OpenVPN Manager v1.0.0
         </p>
       </div>
     </div>

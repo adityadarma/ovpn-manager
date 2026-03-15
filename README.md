@@ -1,6 +1,6 @@
-# OVPN — Modern VPN Management Platform
+# OpenVPN Manager — Modern VPN Management Platform
 
-![Build Status](https://github.com/adityadarma/ovpn-platform/actions/workflows/docker-publish.yml/badge.svg)
+![Build Status](https://github.com/adityadarma/ovpn-manager/actions/workflows/docker-publish.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
 
@@ -47,7 +47,7 @@ A centralized, open-source VPN management platform inspired by enterprise soluti
 ## Monorepo Structure
 
 ```text
-ovpn-platform/
+ovpn-manager/
 ├── apps/
 │   ├── api/        ← Fastify REST API (port 3001)
 │   ├── web/        ← Next.js + ShadCN Dashboard (port 3000)
@@ -73,8 +73,8 @@ ovpn-platform/
 
 Clone the repository and install all monorepo dependencies:
 ```bash
-git clone https://github.com/adityadarma/ovpn-platform.git
-cd ovpn-platform
+git clone https://github.com/adityadarma/ovpn-manager.git
+cd ovpn-manager
 pnpm install
 ```
 
@@ -150,7 +150,7 @@ The "Agent" acts as the middleman between your central Manager API and the local
 
 ```bash
 # Download and run the VPN server installer
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/vpn-server.sh -o vpn-server.sh
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
 ```
@@ -160,8 +160,8 @@ sudo ./vpn-server.sh install
 1. SSH into your actual VPN Server as root.
 2. Clone the repository and run the auto installer:
    ```bash
-   git clone https://github.com/adityadarma/ovpn-platform.git
-   cd ovpn-platform
+   git clone https://github.com/adityadarma/ovpn-manager.git
+   cd ovpn-manager
    chmod +x scripts/vpn-server.sh
    sudo ./scripts/vpn-server.sh install
    ```
@@ -206,8 +206,8 @@ docker compose -f docker-compose.dev.yml up
 **Option 1: With Repository (Local Build)**
 ```bash
 # Clone and build
-git clone https://github.com/adityadarma/ovpn-platform.git
-cd ovpn-platform
+git clone https://github.com/adityadarma/ovpn-manager.git
+cd ovpn-manager
 cp .env.example .env
 nano .env  # Configure
 
@@ -219,11 +219,11 @@ docker compose up -d
 **Option 2: Without Repository (Pre-built Images)** ⭐ Recommended
 ```bash
 # One-line install
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/install-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
 
 # Or manual
-wget https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/docker-compose.yml
-wget https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/.env.production -O .env
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.production -O .env
 nano .env  # Configure JWT_SECRET, etc.
 
 # Pull and start

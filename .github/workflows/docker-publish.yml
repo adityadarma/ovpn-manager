@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ovpn-platform
+  IMAGE_NAME: ovpn-manager
 
 jobs:
   build-and-push:

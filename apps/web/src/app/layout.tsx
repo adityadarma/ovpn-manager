@@ -11,8 +11,8 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'OVPN — VPN Manager',
-  description: 'Centralized VPN Management Platform',
+  title: 'OpenVPN Manager',
+  description: 'Centralized OpenVPN Management Platform',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

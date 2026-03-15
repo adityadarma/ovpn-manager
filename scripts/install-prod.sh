@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# OVPN Platform - Production Installation Script
+# OpenVPN Manager - Production Installation Script
 # ============================================================
-# This script installs OVPN Platform without cloning the repo
-# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/install-prod.sh | sudo bash
+# This script installs OpenVPN Manager without cloning the repo
+# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
 # ============================================================
 
 set -e
@@ -16,14 +16,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="/opt/ovpn-platform"
-REPO_URL="https://raw.githubusercontent.com/adityadarma/ovpn-platform/main"
+INSTALL_DIR="/opt/ovpn-manager"
+REPO_URL="https://raw.githubusercontent.com/adityadarma/ovpn-manager/main"
 
 # Functions
 print_header() {
     echo -e "${BLUE}"
     echo "============================================================"
-    echo "  OVPN Platform - Production Installation"
+    echo "  OpenVPN Manager - Production Installation"
     echo "============================================================"
     echo -e "${NC}"
 }
@@ -165,7 +165,7 @@ configure_env() {
     # Create .env file
     cat > .env << EOF
 # ============================================================
-# OVPN Platform — Production Environment
+# OpenVPN Manager — Production Environment
 # Generated on $(date)
 # ============================================================
 
@@ -230,7 +230,7 @@ EOF
     # Save credentials to a secure file
     cat > credentials.txt << EOF
 ============================================================
-OVPN Platform - Installation Credentials
+OpenVPN Manager - Installation Credentials
 Generated on $(date)
 ============================================================
 
@@ -327,7 +327,7 @@ DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
 # Load environment
-source /opt/ovpn-platform/.env
+source /opt/ovpn-manager/.env
 
 # Backup based on database type
 if [ "$DATABASE_TYPE" = "sqlite" ]; then
@@ -336,10 +336,10 @@ if [ "$DATABASE_TYPE" = "sqlite" ]; then
         -v $BACKUP_DIR:/backup \
         alpine tar czf /backup/ovpn-sqlite-$DATE.tar.gz /data
 elif [ "$DATABASE_TYPE" = "postgres" ]; then
-    docker compose -f /opt/ovpn-platform/docker-compose.yml \
+    docker compose -f /opt/ovpn-manager/docker-compose.yml \
         exec -T postgres pg_dump -U ovpn ovpn > $BACKUP_DIR/ovpn-postgres-$DATE.sql
 elif [ "$DATABASE_TYPE" = "mysql" ]; then
-    docker compose -f /opt/ovpn-platform/docker-compose.yml \
+    docker compose -f /opt/ovpn-manager/docker-compose.yml \
         exec -T mariadb mysqldump -u ovpn -p$MYSQL_PASSWORD ovpn > $BACKUP_DIR/ovpn-mysql-$DATE.sql
 fi
 
@@ -384,7 +384,7 @@ print_summary() {
     echo "  Backup:       $INSTALL_DIR/backup.sh"
     echo ""
     echo -e "${BLUE}Documentation:${NC}"
-    echo "  Full guide: https://github.com/adityadarma/ovpn-platform/blob/main/PRODUCTION-INSTALL.md"
+    echo "  Full guide: https://github.com/adityadarma/ovpn-manager/blob/main/PRODUCTION-INSTALL.md"
     echo ""
 }
 

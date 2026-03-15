@@ -3,7 +3,7 @@
 set -e
 
 # ==========================================
-# OVPN Platform - VPN Node Auto Installer
+# OpenVPN Manager - VPN Node Auto Installer
 # ==========================================
 
 # Make sure only root can run our script
@@ -167,7 +167,7 @@ EOF
     echo "================================="
     echo "OpenVPN is running on UDP port $VPN_PORT (Public IP: $PUBLIC_IP)"
     echo ""
-    echo "To connect this node to the OVPN Platform Manager:"
+    echo "To connect this node to OpenVPN Manager:"
     echo "1. Run the Node Agent and pass the Web Dashboard AGENT Credentials."
     echo ""
     echo "Certificates generated. The CA and TA paths are:"
@@ -179,47 +179,92 @@ EOF
 uninstall_vpn() {
     if [ ! -d "/etc/openvpn/server" ] && [ ! -f "/etc/openvpn/server/server.conf" ]; then
         echo "OpenVPN is not installed or already removed."
-        exit 1
+        exit 0
     fi
 
+    echo "================================="
+    echo "OpenVPN Uninstallation"
+    echo "================================="
     echo "WARNING: This will completely remove OpenVPN and all certificates on this node!"
+    echo ""
     read -p "Are you sure you want to proceed? [y/N]: " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo "Aborted."
-        exit 1
+        exit 0
     fi
 
+    echo ""
     echo "Stopping services..."
-    systemctl stop openvpn-server@server.service || true
-    systemctl disable openvpn-server@server.service || true
-    systemctl stop openvpn@server.service || true
-    systemctl disable openvpn@server.service || true
     
-    systemctl stop openvpn-iptables.service || true
-    systemctl disable openvpn-iptables.service || true
-    rm -f /etc/systemd/system/openvpn-iptables.service
-    systemctl daemon-reload
+    # Try both service name variants (different distros use different names)
+    if systemctl is-active --quiet openvpn-server@server.service 2>/dev/null; then
+        systemctl stop openvpn-server@server.service
+        systemctl disable openvpn-server@server.service 2>/dev/null || true
+        echo "✓ Stopped openvpn-server@server.service"
+    fi
+    
+    if systemctl is-active --quiet openvpn@server.service 2>/dev/null; then
+        systemctl stop openvpn@server.service
+        systemctl disable openvpn@server.service 2>/dev/null || true
+        echo "✓ Stopped openvpn@server.service"
+    fi
+    
+    if systemctl is-active --quiet openvpn-iptables.service 2>/dev/null; then
+        systemctl stop openvpn-iptables.service
+        systemctl disable openvpn-iptables.service 2>/dev/null || true
+        echo "✓ Stopped openvpn-iptables.service"
+    fi
+    
+    if [ -f /etc/systemd/system/openvpn-iptables.service ]; then
+        rm -f /etc/systemd/system/openvpn-iptables.service
+        systemctl daemon-reload
+        echo "✓ Removed custom iptables service"
+    fi
 
+    echo ""
     echo "Removing packages..."
     if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
-        apt-get purge -y openvpn easy-rsa || true
-        apt-get autoremove -y || true
+        DEBIAN_FRONTEND=noninteractive apt-get purge -y openvpn easy-rsa 2>/dev/null || true
+        DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+        echo "✓ Packages removed (Debian/Ubuntu)"
     elif [[ "$OS" == "centos" || "$OS" == "rhel" || "$OS" == "fedora" || "$OS" == "rocky" || "$OS" == "almalinux" ]]; then
-        yum remove -y openvpn easy-rsa || true
-        yum autoremove -y || true
+        yum remove -y openvpn easy-rsa 2>/dev/null || true
+        yum autoremove -y 2>/dev/null || true
+        echo "✓ Packages removed (RHEL/CentOS)"
+    else
+        echo "⚠ Unknown OS, skipping package removal"
     fi
 
+    echo ""
     echo "Cleaning up directories..."
-    rm -rf /etc/openvpn
-    rm -rf /var/log/openvpn*
+    if [ -d /etc/openvpn ]; then
+        rm -rf /etc/openvpn
+        echo "✓ Removed /etc/openvpn"
+    fi
+    
+    if ls /var/log/openvpn* 1> /dev/null 2>&1; then
+        rm -rf /var/log/openvpn*
+        echo "✓ Removed OpenVPN logs"
+    fi
 
-    # Remove sysctl modifications
-    sed -i '/net.ipv4.ip_forward=1/d' /etc/sysctl.conf
-    sysctl -p
+    echo ""
+    echo "Reverting network configuration..."
+    # Remove sysctl modifications (only if exists)
+    if grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf 2>/dev/null; then
+        sed -i '/net.ipv4.ip_forward=1/d' /etc/sysctl.conf
+        sysctl -p > /dev/null 2>&1
+        echo "✓ Reverted IP forwarding"
+    fi
+    
+    # Clean up iptables rules (best effort)
+    iptables -t nat -D POSTROUTING -s $VPN_NET/24 -o $PRIMARY_IF -j MASQUERADE 2>/dev/null || true
 
+    echo ""
     echo "================================="
-    echo "UNINSTALL COMPLETE."
+    echo "UNINSTALL COMPLETE"
     echo "================================="
+    echo "OpenVPN has been completely removed from this system."
+    echo ""
 }
 
 if [ "$ACTION" == "install" ]; then

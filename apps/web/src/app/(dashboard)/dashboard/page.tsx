@@ -25,7 +25,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1 text-sm">Overview of your OVPN infrastructure</p>
+        <p className="text-gray-500 mt-1 text-sm">Overview of your OpenVPN infrastructure</p>
       </div>
 
       {/* Stat Cards */}

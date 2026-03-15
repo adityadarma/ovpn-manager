@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   ovpn-agent:
-    image: ovpn-platform:agent
+    image: ovpn-manager:agent
     container_name: ovpn-agent
     restart: unless-stopped
     environment:

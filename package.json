@@ -1,8 +1,8 @@
 {
-  "name": "ovpn-platform",
+  "name": "ovpn-manager",
   "version": "1.0.0",
   "private": true,
-  "description": "OVPN — VPN Management Platform",
+  "description": "OpenVPN Manager — VPN Management System",
   "scripts": {
     "dev": "turbo run dev --filter=!@ovpn/agent",
     "agent:dev": "turbo run dev --filter=@ovpn/agent",

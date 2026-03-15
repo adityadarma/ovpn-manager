@@ -1,6 +1,6 @@
 # Docker Deployment Guide
 
-This guide explains how to run the OVPN Platform using Docker Compose for both development and production environments.
+This guide explains how to run OpenVPN Manager using Docker Compose for both development and production environments.
 
 ## 📋 Table of Contents
 
@@ -120,9 +120,9 @@ JWT_SECRET=dev-secret-please-change-in-production-32chars
    docker compose build
    
    # Or build individually
-   docker build -t ovpn-platform:api -f apps/api/Dockerfile .
-   docker build -t ovpn-platform:web -f apps/web/Dockerfile .
-   docker build -t ovpn-platform:agent -f apps/agent/Dockerfile .
+   docker build -t ovpn-manager:api -f apps/api/Dockerfile .
+   docker build -t ovpn-manager:web -f apps/web/Dockerfile .
+   docker build -t ovpn-manager:agent -f apps/agent/Dockerfile .
    ```
 
 2. **Configure environment variables:**
@@ -271,7 +271,7 @@ First, install OpenVPN on your VPN server using our automated script:
 
 ```bash
 # Download and run the VPN server installer
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/vpn-server.sh -o vpn-server.sh
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
 ```
@@ -280,8 +280,8 @@ sudo ./vpn-server.sh install
 
 ```bash
 # Clone repository
-git clone https://github.com/adityadarma/ovpn-platform.git
-cd ovpn-platform
+git clone https://github.com/adityadarma/ovpn-manager.git
+cd ovpn-manager
 
 # Run installer
 chmod +x scripts/vpn-server.sh

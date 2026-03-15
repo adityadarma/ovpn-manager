@@ -4,14 +4,14 @@ const settingsRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/v1/settings
   app.get(
     '/settings',
-    { onRequest: [app.authenticate], schema: { tags: ['settings'], summary: 'Get platform settings', security: [{ bearerAuth: [] }] } },
+    { onRequest: [app.authenticate], schema: { tags: ['settings'], summary: 'Get system settings', security: [{ bearerAuth: [] }] } },
     async () => app.db('settings').select('*').orderBy('key', 'asc'),
   )
 
   // POST /api/v1/settings  (bulk update)
   app.post(
     '/settings',
-    { onRequest: [app.authenticateAdmin], schema: { tags: ['settings'], summary: 'Update platform settings', security: [{ bearerAuth: [] }] } },
+    { onRequest: [app.authenticateAdmin], schema: { tags: ['settings'], summary: 'Update system settings', security: [{ bearerAuth: [] }] } },
     async (request, reply) => {
       const updates = request.body as Record<string, string>
 

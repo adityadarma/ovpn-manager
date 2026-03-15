@@ -17,7 +17,7 @@ This guide shows you how to deploy OVPN Platform in production without cloning t
 ### Method 1: One-Line Install Script
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/install-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
 ```
 
 This script will:
@@ -37,20 +37,20 @@ Follow the steps below for full control over the installation process.
 Create a directory for OVPN Platform:
 
 ```bash
-mkdir -p /opt/ovpn-platform
-cd /opt/ovpn-platform
+mkdir -p /opt/ovpn-manager
+cd /opt/ovpn-manager
 ```
 
 Download the production compose file:
 
 ```bash
-wget https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.yml
 ```
 
 Download the environment template:
 
 ```bash
-wget https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/.env.production -O .env
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.production -O .env
 ```
 
 ---
@@ -148,7 +148,7 @@ docker compose ps
 Expected output:
 ```
 NAME            IMAGE                                    STATUS
-ovpn-api        ghcr.io/adityadarma/ovpn-platform:api    Up (healthy)
+ovpn-api        ghcr.io/adityadarma/ovpn-manager:api    Up (healthy)
 ovpn-web        ghcr.io/adityadarma/ovpn-platform:web    Up
 ```
 
