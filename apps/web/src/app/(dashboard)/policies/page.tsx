@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Plus, Trash2, Shield, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Policy {
   id: string
@@ -79,12 +80,13 @@ export default function PoliciesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Network Policies</h1>
           <p className="text-sm text-gray-500 mt-1">{policies.length} rule{policies.length !== 1 ? 's' : ''} defined</p>
         </div>
-        <button
+        <Button
+          id="btn-add-policy"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
         >
-          <Plus className="h-4 w-4" /> Add Policy
-        </button>
+          <Plus className="mr-2 h-4 w-4" /> Add Policy
+        </Button>
       </div>
 
       {/* Table */}
@@ -148,7 +150,7 @@ export default function PoliciesPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
-                <h2 className="font-semibold text-gray-900">Add Network Policy</h2>
+                <h2 className="font-semibold text-gray-900">Add Policy</h2>
                 <p className="text-sm text-gray-400 mt-0.5">Define network access rules</p>
               </div>
               <button onClick={() => setShowForm(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-md">
@@ -230,7 +232,7 @@ export default function PoliciesPage() {
                   disabled={createMutation.isPending}
                   className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {createMutation.isPending ? 'Creating...' : 'Create Policy'}
+                  {createMutation.isPending ? 'Adding...' : 'Add Policy'}
                 </button>
               </div>
             </form>

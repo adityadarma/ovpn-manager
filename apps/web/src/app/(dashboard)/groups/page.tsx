@@ -110,11 +110,11 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Groups</h1>
-          <p className="text-sm text-gray-500 mt-1">Organize VPN users into access groups</p>
+          <p className="text-sm text-gray-500 mt-1">{groups.length} group{groups.length !== 1 ? 's' : ''} created</p>
         </div>
-        <Button id="btn-create-group" onClick={() => { setShowCreate(true); setForm({ name: '', description: '' }) }}>
+        <Button id="btn-create-group" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowCreate(true); setForm({ name: '', description: '' }) }}>
           <Plus className="mr-2 h-4 w-4" />
-          New Group
+          Add Group
         </Button>
       </div>
 
@@ -252,7 +252,7 @@ export default function GroupsPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Group</DialogTitle>
+            <DialogTitle>Add Group</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -282,7 +282,7 @@ export default function GroupsPage() {
               disabled={!form.name.trim() || createMutation.isPending}
               onClick={() => createMutation.mutate(form)}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create'}
+              {createMutation.isPending ? 'Adding...' : 'Add Group'}
             </Button>
           </DialogFooter>
         </DialogContent>

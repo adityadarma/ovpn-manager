@@ -109,11 +109,11 @@ export default function NetworksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Networks</h1>
-          <p className="text-sm text-gray-500 mt-1">Define IP/CIDR segments accessible via VPN</p>
+          <p className="text-sm text-gray-500 mt-1">{networks.length} network{networks.length !== 1 ? 's' : ''} defined</p>
         </div>
-        <Button id="btn-create-network" onClick={() => { setShowCreate(true); setForm({ name: '', cidr: '', description: '' }) }}>
+        <Button id="btn-create-network" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowCreate(true); setForm({ name: '', cidr: '', description: '' }) }}>
           <Plus className="mr-2 h-4 w-4" />
-          New Network
+          Add Network
         </Button>
       </div>
 
@@ -225,7 +225,7 @@ export default function NetworksPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Network Segment</DialogTitle>
+            <DialogTitle>Add Network</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">

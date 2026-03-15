@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Plus, Trash2, MapPin, Clock, Activity, Server, X, Copy, CheckCircle2 } from 'lucide-react'
 import type { VpnNode } from '@ovpn/shared'
+import { Button } from '@/components/ui/button'
 
 interface NodeForm {
   hostname: string
@@ -84,12 +85,13 @@ export default function NodesPage() {
           <h1 className="text-2xl font-bold text-gray-900">VPN Nodes</h1>
           <p className="text-sm text-gray-500 mt-1">{onlineCount}/{nodes.length} nodes online</p>
         </div>
-        <button
+        <Button
+          id="btn-add-node"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
         >
-          <Plus className="h-4 w-4" /> Add Node
-        </button>
+          <Plus className="mr-2 h-4 w-4" /> Add Node
+        </Button>
       </div>
 
       {/* Grid */}
@@ -193,20 +195,20 @@ export default function NodesPage() {
                   </button>
                 </div>
 
-                <button
+                <Button
                   onClick={closeRegistration}
-                  className="w-full px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="w-full bg-gray-900 hover:bg-gray-800"
                 >
                   I have saved these credentials
-                </button>
+                </Button>
               </div>
             ) : (
               // Registration Form
               <>
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                   <div>
-                    <h2 className="font-semibold text-gray-900">Register Node</h2>
-                    <p className="text-sm text-gray-400 mt-0.5">Add a new VPN node</p>
+                    <h2 className="font-semibold text-gray-900">Add Node</h2>
+                    <p className="text-sm text-gray-400 mt-0.5">Register a new VPN node</p>
                   </div>
                   <button onClick={() => setShowForm(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-md">
                     <X className="h-5 w-5" />
@@ -249,20 +251,21 @@ export default function NodesPage() {
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => setShowForm(false)}
-                      className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
                       disabled={createMutation.isPending}
-                      className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                     >
-                      {createMutation.isPending ? 'Registering...' : 'Register Node'}
-                    </button>
+                      {createMutation.isPending ? 'Adding...' : 'Add Node'}
+                    </Button>
                   </div>
                 </form>
               </>

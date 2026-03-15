@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
-import { UserPlus, Trash2, Download, Shield, Search, X } from 'lucide-react'
+import { Trash2, Download, Shield, Search, X, Plus } from 'lucide-react'
 import type { User } from '@ovpn/shared'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 
 interface CreateUserPayload {
   username: string
@@ -105,12 +106,13 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-gray-900">VPN Users</h1>
           <p className="text-sm text-gray-500 mt-1">{users.length} user{users.length !== 1 ? 's' : ''} registered</p>
         </div>
-        <button
+        <Button
+          id="btn-add-user"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
         >
-          <UserPlus className="h-4 w-4" /> Add User
-        </button>
+          <Plus className="mr-2 h-4 w-4" /> Add User
+        </Button>
       </div>
 
       {/* Search */}
@@ -263,20 +265,21 @@ export default function UsersPage() {
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 >
                   {createMutation.isPending ? 'Creating...' : 'Create User'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
