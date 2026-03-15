@@ -15,6 +15,8 @@ import {
   UsersRound,
   UserCircle,
   ChevronsUpDown,
+  ListTodo,
+  FileText,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -43,6 +45,8 @@ const NAV_ITEMS = [
   { href: '/nodes', label: 'Nodes', icon: Server },
   { href: '/sessions', label: 'Sessions', icon: Activity },
   { href: '/policies', label: 'Policies', icon: Shield },
+  { href: '/tasks', label: 'Tasks', icon: ListTodo },
+  { href: '/audit', label: 'Audit Logs', icon: FileText, adminOnly: true },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
@@ -81,7 +85,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              {NAV_ITEMS.filter(item => !item.adminOnly || user?.role === 'admin').map(({ href, label, icon: Icon }) => {
                 const active = pathname.startsWith(href) && (href !== '/dashboard' || pathname === '/dashboard')
                 return (
                   <SidebarMenuItem key={href}>

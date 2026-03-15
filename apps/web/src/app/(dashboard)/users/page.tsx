@@ -21,6 +21,7 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateUserPayload>({ username: '', email: '', password: '', role: 'user' })
   const [search, setSearch] = useState('')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['users'],
@@ -49,6 +50,54 @@ export default function UsersPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => api.delete(`/api/v1/users/${id}`)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setSelectedUsers(new Set())
+      toast.success('Users deleted successfully')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const bulkToggleActiveMutation = useMutation({
+    mutationFn: async ({ ids, isActive }: { ids: string[]; isActive: boolean }) => {
+      await Promise.all(ids.map(id => api.patch(`/api/v1/users/${id}`, { isActive })))
+    },
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setSelectedUsers(new Set())
+      toast.success(`Users ${variables.isActive ? 'enabled' : 'disabled'} successfully`)
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const toggleUser = (userId: string) => {
+    const newSelected = new Set(selectedUsers)
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId)
+    } else {
+      newSelected.add(userId)
+    }
+    setSelectedUsers(newSelected)
+  }
+
+  const toggleAll = () => {
+    if (selectedUsers.size === filtered.length) {
+      setSelectedUsers(new Set())
+    } else {
+      setSelectedUsers(new Set(filtered.map(u => u.id)))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (confirm(`Delete ${selectedUsers.size} user(s)?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedUsers))
+    }
+  }
 
   const [isDownloading, setIsDownloading] = useState<string | null>(null)
   
@@ -103,15 +152,49 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">VPN Users</h1>
-          <p className="text-sm text-gray-500 mt-1">{users.length} user{users.length !== 1 ? 's' : ''} registered</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {users.length} user{users.length !== 1 ? 's' : ''} registered
+            {selectedUsers.size > 0 && ` • ${selectedUsers.size} selected`}
+          </p>
         </div>
-        <Button
-          id="btn-add-user"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setShowForm(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add User
-        </Button>
+        <div className="flex gap-2">
+          {selectedUsers.size > 0 && (
+            <>
+              <Button
+                variant="outline"
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                onClick={() => bulkToggleActiveMutation.mutate({ ids: Array.from(selectedUsers), isActive: true })}
+                disabled={bulkToggleActiveMutation.isPending}
+              >
+                Enable ({selectedUsers.size})
+              </Button>
+              <Button
+                variant="outline"
+                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => bulkToggleActiveMutation.mutate({ ids: Array.from(selectedUsers), isActive: false })}
+                disabled={bulkToggleActiveMutation.isPending}
+              >
+                Disable ({selectedUsers.size})
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleBulkDelete}
+                disabled={bulkDeleteMutation.isPending}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete ({selectedUsers.size})
+              </Button>
+            </>
+          )}
+          <Button
+            id="btn-add-user"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add User
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -131,6 +214,14 @@ export default function UsersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="px-5 py-3 w-12">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && selectedUsers.size === filtered.length}
+                  onChange={toggleAll}
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+              </th>
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -140,11 +231,19 @@ export default function UsersPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
-              <tr><td colSpan={5} className="py-12 text-center text-gray-400">Loading users...</td></tr>
+              <tr><td colSpan={6} className="py-12 text-center text-gray-400">Loading users...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={5} className="py-12 text-center text-gray-400">No users found.</td></tr>
+              <tr><td colSpan={6} className="py-12 text-center text-gray-400">No users found.</td></tr>
             ) : filtered.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-5 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedUsers.has(user.id)}
+                    onChange={() => toggleUser(user.id)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-xs">

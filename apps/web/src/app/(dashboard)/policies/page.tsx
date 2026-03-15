@@ -36,6 +36,7 @@ export default function PoliciesPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedPolicies, setSelectedPolicies] = useState<Set<string>>(new Set())
   const [form, setForm] = useState<CreatePolicyForm>({
     targetType: 'user',
     userId: '',
@@ -88,6 +89,47 @@ export default function PoliciesPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => api.delete(`/api/v1/policies/${id}`)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['policies'] })
+      setSelectedPolicies(new Set())
+      toast.success('Policies deleted successfully')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const togglePolicy = (policyId: string) => {
+    const newSelected = new Set(selectedPolicies)
+    if (newSelected.has(policyId)) {
+      newSelected.delete(policyId)
+    } else {
+      newSelected.add(policyId)
+    }
+    setSelectedPolicies(newSelected)
+  }
+
+  const toggleAll = (policyList: Policy[]) => {
+    const policyIds = policyList.map(p => p.id)
+    const allSelected = policyIds.every(id => selectedPolicies.has(id))
+    
+    if (allSelected) {
+      const newSelected = new Set(selectedPolicies)
+      policyIds.forEach(id => newSelected.delete(id))
+      setSelectedPolicies(newSelected)
+    } else {
+      setSelectedPolicies(new Set([...selectedPolicies, ...policyIds]))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (confirm(`Delete ${selectedPolicies.size} polic${selectedPolicies.size === 1 ? 'y' : 'ies'}?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedPolicies))
+    }
+  }
+
   // Filter policies
   const userPolicies = policies.filter(p => p.userId)
   const groupPolicies = policies.filter(p => p.groupId)
@@ -107,65 +149,86 @@ export default function PoliciesPage() {
   const filteredUserPolicies = filterPolicies(userPolicies)
   const filteredGroupPolicies = filterPolicies(groupPolicies)
 
-  const PolicyTable = ({ policies: policyList, type }: { policies: Policy[]; type: 'user' | 'group' }) => (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {policyList.length === 0 ? (
-        <div className="py-16 text-center">
-          <Shield className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-          <p className="font-medium text-gray-700">No {type} policies found</p>
-          <p className="text-sm text-gray-400 mt-1">
-            {searchQuery ? 'Try a different search term' : `Create network access rules for ${type}s`}
-          </p>
-        </div>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                {type === 'user' ? 'User' : 'Group'}
-              </th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Network</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {policyList.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-4 text-gray-900 font-medium">
-                  {type === 'user' ? (p.username ?? p.userId) : (p.group_name ?? p.groupId)}
-                </td>
-                <td className="px-5 py-4 font-mono text-xs text-gray-600">{p.allowedNetwork}</td>
-                <td className="px-5 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                    p.action === 'allow'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-red-50 text-red-600'
-                  }`}>
-                    {p.action}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-gray-500">{p.priority}</td>
-                <td className="px-5 py-4 text-gray-500 max-w-xs truncate">
-                  {p.description && p.description.length > 0 ? p.description : '—'}
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <button
-                    onClick={() => { if (confirm('Delete policy?')) deleteMutation.mutate(p.id) }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
+  const PolicyTable = ({ policies: policyList, type }: { policies: Policy[]; type: 'user' | 'group' }) => {
+    const policyIds = policyList.map(p => p.id)
+    const allSelected = policyList.length > 0 && policyIds.every(id => selectedPolicies.has(id))
+
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {policyList.length === 0 ? (
+          <div className="py-16 text-center">
+            <Shield className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+            <p className="font-medium text-gray-700">No {type} policies found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {searchQuery ? 'Try a different search term' : `Create network access rules for ${type}s`}
+            </p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-5 py-3 w-12">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => toggleAll(policyList)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {type === 'user' ? 'User' : 'Group'}
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Network</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  )
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {policyList.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-5 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedPolicies.has(p.id)}
+                      onChange={() => togglePolicy(p.id)}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </td>
+                  <td className="px-5 py-4 text-gray-900 font-medium">
+                    {type === 'user' ? (p.username ?? p.userId) : (p.group_name ?? p.groupId)}
+                  </td>
+                  <td className="px-5 py-4 font-mono text-xs text-gray-600">{p.allowedNetwork}</td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                      p.action === 'allow'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-red-50 text-red-600'
+                    }`}>
+                      {p.action}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-gray-500">{p.priority}</td>
+                  <td className="px-5 py-4 text-gray-500 max-w-xs truncate">
+                    {p.description && p.description.length > 0 ? p.description : '—'}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <button
+                      onClick={() => { if (confirm('Delete policy?')) deleteMutation.mutate(p.id) }}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -173,15 +236,31 @@ export default function PoliciesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Network Policies</h1>
-          <p className="text-sm text-gray-500 mt-1">{policies.length} rule{policies.length !== 1 ? 's' : ''} defined</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {policies.length} rule{policies.length !== 1 ? 's' : ''} defined
+            {selectedPolicies.size > 0 && ` • ${selectedPolicies.size} selected`}
+          </p>
         </div>
-        <Button
-          id="btn-add-policy"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setShowForm(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Policy
-        </Button>
+        <div className="flex gap-2">
+          {selectedPolicies.size > 0 && (
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete ({selectedPolicies.size})
+            </Button>
+          )}
+          <Button
+            id="btn-add-policy"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Policy
+          </Button>
+        </div>
       </div>
 
       {/* Search */}

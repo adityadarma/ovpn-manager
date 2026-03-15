@@ -24,6 +24,7 @@ export default function NodesPage() {
   const [form, setForm] = useState<NodeForm>({ hostname: '', ipAddress: '', region: '' })
   const [registeredNode, setRegisteredNode] = useState<{ id: string; token: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set())
 
   const { data: nodes = [], isLoading } = useQuery<VpnNode[]>({
     queryKey: ['nodes'],
@@ -75,6 +76,42 @@ export default function NodesPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => api.delete(`/api/v1/nodes/${id}`)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['nodes'] })
+      setSelectedNodes(new Set())
+      toast.success('Nodes deleted successfully')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const toggleNode = (nodeId: string) => {
+    const newSelected = new Set(selectedNodes)
+    if (newSelected.has(nodeId)) {
+      newSelected.delete(nodeId)
+    } else {
+      newSelected.add(nodeId)
+    }
+    setSelectedNodes(newSelected)
+  }
+
+  const toggleAll = () => {
+    if (selectedNodes.size === nodes.length) {
+      setSelectedNodes(new Set())
+    } else {
+      setSelectedNodes(new Set(nodes.map(n => n.id)))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (confirm(`Delete ${selectedNodes.size} node(s)?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedNodes))
+    }
+  }
+
   const onlineCount = nodes.filter(n => n.status === 'online').length
 
   return (
@@ -83,15 +120,31 @@ export default function NodesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">VPN Nodes</h1>
-          <p className="text-sm text-gray-500 mt-1">{onlineCount}/{nodes.length} nodes online</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {onlineCount}/{nodes.length} nodes online
+            {selectedNodes.size > 0 && ` • ${selectedNodes.size} selected`}
+          </p>
         </div>
-        <Button
-          id="btn-add-node"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setShowForm(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Node
-        </Button>
+        <div className="flex gap-2">
+          {selectedNodes.size > 0 && (
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete ({selectedNodes.size})
+            </Button>
+          )}
+          <Button
+            id="btn-add-node"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Node
+          </Button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -104,65 +157,88 @@ export default function NodesPage() {
           <p className="text-sm text-gray-400 mt-1">Add your first VPN node to get started</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {nodes.map((node) => (
-            <div key={node.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              {/* Status & Hostname */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-2.5 h-2.5 rounded-full mt-0.5 ${
-                    node.status === 'online' ? 'bg-emerald-500 shadow-sm shadow-emerald-200' : 'bg-gray-300'
-                  }`} />
-                  <div>
-                    <p className="font-semibold text-gray-900">{node.hostname}</p>
-                    <p className="text-xs font-mono text-gray-400 mt-0.5">{node.ipAddress}</p>
+        <div className="space-y-4">
+          {/* Select All Checkbox */}
+          <div className="flex items-center gap-2 px-1">
+            <input
+              type="checkbox"
+              checked={nodes.length > 0 && selectedNodes.size === nodes.length}
+              onChange={toggleAll}
+              className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="text-sm text-gray-600">Select all</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {nodes.map((node) => (
+              <div key={node.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 relative">
+                {/* Checkbox */}
+                <div className="absolute top-3 left-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedNodes.has(node.id)}
+                    onChange={() => toggleNode(node.id)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* Status & Hostname */}
+                <div className="flex items-start justify-between mb-4 ml-7">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2.5 h-2.5 rounded-full mt-0.5 ${
+                      node.status === 'online' ? 'bg-emerald-500 shadow-sm shadow-emerald-200' : 'bg-gray-300'
+                    }`} />
+                    <div>
+                      <p className="font-semibold text-gray-900">{node.hostname}</p>
+                      <p className="text-xs font-mono text-gray-400 mt-0.5">{node.ipAddress}</p>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                    node.status === 'online'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : node.status === 'offline'
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-amber-50 text-amber-600'
+                  }`}>
+                    {node.status}
+                  </span>
+                </div>
+
+                {/* Details */}
+                <div className="space-y-1.5 text-xs text-gray-500 ml-7">
+                  {node.region && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-gray-300" /> {node.region}
+                    </div>
+                  )}
+                  {node.version && (
+                    <div className="flex items-center gap-2">
+                      <Server className="h-3.5 w-3.5 text-gray-300" /> v{node.version}
+                    </div>
+                  )}
+                  {node.lastSeen && (
+                    <div className="flex items-center gap-2" suppressHydrationWarning>
+                      <Clock className="h-3.5 w-3.5 text-gray-300" /> 
+                      Last seen {new Date(node.lastSeen).toLocaleString()}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-3.5 w-3.5 text-gray-300" /> {node.activeSessions ?? 0} active sessions
                   </div>
                 </div>
-                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                  node.status === 'online'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : node.status === 'offline'
-                      ? 'bg-red-50 text-red-600'
-                      : 'bg-amber-50 text-amber-600'
-                }`}>
-                  {node.status}
-                </span>
-              </div>
 
-              {/* Details */}
-              <div className="space-y-1.5 text-xs text-gray-500">
-                {node.region && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 text-gray-300" /> {node.region}
-                  </div>
-                )}
-                {node.version && (
-                  <div className="flex items-center gap-2">
-                    <Server className="h-3.5 w-3.5 text-gray-300" /> v{node.version}
-                  </div>
-                )}
-                {node.lastSeen && (
-                  <div className="flex items-center gap-2" suppressHydrationWarning>
-                    <Clock className="h-3.5 w-3.5 text-gray-300" /> 
-                    Last seen {new Date(node.lastSeen).toLocaleString()}
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Activity className="h-3.5 w-3.5 text-gray-300" /> {node.activeSessions ?? 0} active sessions
+                {/* Actions */}
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end ml-7">
+                  <button
+                    onClick={() => { if (confirm('Remove node?')) deleteMutation.mutate(node.id) }}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-
-              {/* Actions */}
-              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-                <button
-                  onClick={() => { if (confirm('Remove node?')) deleteMutation.mutate(node.id) }}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

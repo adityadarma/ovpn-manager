@@ -81,6 +81,7 @@ export default function GroupsPage() {
   const [showAddNetwork, setShowAddNetwork] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null)
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
     queryKey: ['groups'],
@@ -134,6 +135,43 @@ export default function GroupsPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => api.delete(`/api/v1/groups/${id}`)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      setSelectedGroups(new Set())
+      if (detailGroup) setDetailGroup(null)
+      toast.success('Groups deleted successfully')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const toggleGroup = (groupId: string) => {
+    const newSelected = new Set(selectedGroups)
+    if (newSelected.has(groupId)) {
+      newSelected.delete(groupId)
+    } else {
+      newSelected.add(groupId)
+    }
+    setSelectedGroups(newSelected)
+  }
+
+  const toggleAll = () => {
+    if (selectedGroups.size === groups.length) {
+      setSelectedGroups(new Set())
+    } else {
+      setSelectedGroups(new Set(groups.map(g => g.id)))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (confirm(`Delete ${selectedGroups.size} group(s)?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedGroups))
+    }
+  }
 
   const addMemberMutation = useMutation({
     mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
@@ -200,12 +238,28 @@ export default function GroupsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Groups</h1>
-          <p className="text-sm text-gray-500 mt-1">{groups.length} group{groups.length !== 1 ? 's' : ''} created</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {groups.length} group{groups.length !== 1 ? 's' : ''} created
+            {selectedGroups.size > 0 && ` • ${selectedGroups.size} selected`}
+          </p>
         </div>
-        <Button id="btn-create-group" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowCreate(true); setForm({ name: '', description: '' }) }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Group
-        </Button>
+        <div className="flex gap-2">
+          {selectedGroups.size > 0 && (
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete ({selectedGroups.size})
+            </Button>
+          )}
+          <Button id="btn-create-group" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setShowCreate(true); setForm({ name: '', description: '' }) }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Group
+          </Button>
+        </div>
       </div>
 
       {/* Detail panel + table side-by-side */}
@@ -228,6 +282,14 @@ export default function GroupsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={groups.length > 0 && selectedGroups.size === groups.length}
+                          onChange={toggleAll}
+                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead className="text-center">Members</TableHead>
@@ -240,14 +302,21 @@ export default function GroupsPage() {
                       <TableRow
                         key={g.id}
                         className={`cursor-pointer hover:bg-muted/50 ${detailGroup === g.id ? 'bg-muted' : ''}`}
-                        onClick={() => setDetailGroup(detailGroup === g.id ? null : g.id)}
                       >
-                        <TableCell className="font-medium">{g.name}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{g.description ?? '—'}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedGroups.has(g.id)}
+                            onChange={() => toggleGroup(g.id)}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium" onClick={() => setDetailGroup(detailGroup === g.id ? null : g.id)}>{g.name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm" onClick={() => setDetailGroup(detailGroup === g.id ? null : g.id)}>{g.description ?? '—'}</TableCell>
+                        <TableCell className="text-center" onClick={() => setDetailGroup(detailGroup === g.id ? null : g.id)}>
                           <Badge variant="secondary">{g.member_count}</Badge>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center" onClick={() => setDetailGroup(detailGroup === g.id ? null : g.id)}>
                           <Badge variant="outline">{g.network_count}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -463,7 +532,7 @@ export default function GroupsPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="select-user">Select User</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <Select value={selectedUserId ?? undefined} onValueChange={(value) => setSelectedUserId(value ?? null)}>
                 <SelectTrigger id="select-user">
                   <SelectValue placeholder="Choose a user..." />
                 </SelectTrigger>
@@ -500,7 +569,7 @@ export default function GroupsPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="select-network">Select Network</Label>
-              <Select value={selectedNetworkId} onValueChange={setSelectedNetworkId}>
+              <Select value={selectedNetworkId ?? undefined} onValueChange={(value) => setSelectedNetworkId(value ?? null)}>
                 <SelectTrigger id="select-network">
                   <SelectValue placeholder="Choose a network..." />
                 </SelectTrigger>

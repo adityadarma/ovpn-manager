@@ -20,6 +20,7 @@ import settingsRoutes from './modules/settings/settings.routes'
 import vpnRoutes from './modules/vpn/vpn.routes'
 import groupRoutes from './modules/groups/groups.routes'
 import networkRoutes from './modules/networks/networks.routes'
+import auditRoutes from './modules/audit/audit.routes'
 
 export async function buildApp(env: Env) {
   const db = createDb({
@@ -55,6 +56,7 @@ export async function buildApp(env: Env) {
       await v1.register(vpnRoutes)
       await v1.register(groupRoutes)
       await v1.register(networkRoutes)
+      await v1.register(auditRoutes)
     },
     { prefix: '/api/v1' },
   )
