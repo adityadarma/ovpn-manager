@@ -76,10 +76,11 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
       await app.db('audit_logs').insert({
         id: logId,
         user_id: user.id,
+        username: user.username,
         action: 'vpn_auth_success',
-        resource: 'vpn_auth',
+        resource_type: 'vpn_auth',
         resource_id: node_id ?? null,
-        ip: request.ip,
+        ip_address: request.ip,
         created_at: new Date(),
       }).catch(() => { /* non-fatal */ })
 
