@@ -11,14 +11,17 @@ RUN pnpm install --frozen-lockfile
 
 COPY apps/agent ./apps/agent
 COPY packages/shared ./packages/shared
+COPY apps/agent/tsup.config.ts ./apps/agent/tsup.config.ts
 
-# Run production pruning
-RUN pnpm install --prod --frozen-lockfile
+# Build the bundled Javascript code via tsup
+RUN pnpm --filter @ovpn/agent build
+
+# Isolate app with only its required dependencies for a leaner image
+RUN pnpm deploy --filter @ovpn/agent --prod /prod/agent
 
 # Final minimal runner stage
 FROM node:24-alpine AS runner
 WORKDIR /app
-COPY --from=builder /app /app
-RUN npm install -g tsx
+COPY --from=builder /prod/agent /app
 ENV NODE_ENV=production
-CMD ["tsx", "apps/agent/src/index.ts"]
+CMD ["node", "dist/src/index.js"]

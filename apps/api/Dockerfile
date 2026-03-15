@@ -13,9 +13,18 @@ COPY packages/shared ./packages/shared
 COPY packages/db ./packages/db
 COPY apps/api ./apps/api
 COPY apps/api/start.sh ./start.sh
+COPY apps/api/tsup.config.ts ./apps/api/tsup.config.ts
 
-# Strip dev deps (prod only)
-RUN pnpm install --prod --frozen-lockfile
+# Build the bundled Javascript code via tsup
+RUN pnpm --filter @ovpn/api build
+
+# Isolate app with only its required production dependencies
+RUN pnpm deploy --filter @ovpn/api --prod /prod/api
+
+# Copy tsup bundle into the deployed payload
+RUN cp -r /app/apps/api/dist /prod/api/dist
+# Copy start.sh into the deployed payload
+RUN cp /app/start.sh /prod/api/start.sh
 
 # Production runner
 FROM node:24-alpine AS runner
@@ -23,11 +32,12 @@ FROM node:24-alpine AS runner
 RUN apk add --no-cache curl
 
 WORKDIR /app
-COPY --from=builder /app /app
-
+COPY --from=builder /prod/api /app
+# tsx is only needed for migrations at boot (Knex dynamic TS loading)
 RUN npm install -g tsx
 ENV NODE_ENV=production
 RUN mkdir -p /data && chown -R nobody:nobody /data
+RUN chmod +x /app/start.sh
 USER nobody
 EXPOSE 3001
-CMD ["./start.sh"]
+CMD ["/app/start.sh"]

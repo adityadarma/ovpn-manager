@@ -1,15 +1,18 @@
 #!/bin/sh
 set -e
 
-# Run database migrations before starting the API
 echo "=========================================="
 echo "    Running Database Migrations...        "
 echo "=========================================="
-cd /app/packages/db
-npx tsx src/migrate.ts
+cd /app
+tsx node_modules/@ovpn/db/src/migrate.ts
+
+echo "=========================================="
+echo "    Running Database Seeders...           "
+echo "=========================================="
+tsx node_modules/@ovpn/db/src/seed.ts
 
 echo "=========================================="
 echo "    Starting API Backend...               "
 echo "=========================================="
-cd /app
-exec tsx apps/api/src/index.ts
+exec node dist/index.js
