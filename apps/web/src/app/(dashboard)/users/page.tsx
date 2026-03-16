@@ -21,7 +21,7 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false)
   const [showCertModal, setShowCertModal] = useState(false)
   const [selectedUserForCert, setSelectedUserForCert] = useState<User | null>(null)
-  const [certForm, setCertForm] = useState({ nodeId: '', passwordProtected: false, password: '', validDays: 3650 })
+  const [certForm, setCertForm] = useState({ nodeId: '', passwordProtected: false, password: '', validDays: 0 })
   const [form, setForm] = useState<CreateUserPayload>({ username: '', email: '', password: '', role: 'user' })
   const [search, setSearch] = useState('')
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
@@ -90,22 +90,22 @@ export default function UsersPage() {
   })
 
   const generateCertMutation = useMutation({
-    mutationFn: ({ userId, nodeId, password, passwordProtected, validDays }: { userId: string; nodeId: string; password?: string; passwordProtected: boolean; validDays: number }) =>
-      api.post(`/api/v1/users/${userId}/generate-cert`, { nodeId, password, passwordProtected, validDays }),
+    mutationFn: ({ userId, nodeId, password, passwordProtected, validDays }: { userId: string; nodeId: string; password?: string; passwordProtected: boolean; validDays: number | null }) =>
+      api.post(`/api/v1/users/${userId}/generate-cert`, { nodeId, password, passwordProtected, validDays: validDays === 0 ? null : validDays }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['expiring-certs'] })
       setShowCertModal(false)
       setSelectedUserForCert(null)
-      setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 3650 })
+      setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 0 })
       toast.success('Certificate generated successfully')
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
   const bulkGenerateCertMutation = useMutation({
-    mutationFn: ({ userIds, nodeId, password, passwordProtected, validDays }: { userIds: string[]; nodeId: string; password?: string; passwordProtected: boolean; validDays: number }) =>
-      api.post('/api/v1/users/bulk-generate-cert', { userIds, nodeId, password, passwordProtected, validDays }),
+    mutationFn: ({ userIds, nodeId, password, passwordProtected, validDays }: { userIds: string[]; nodeId: string; password?: string; passwordProtected: boolean; validDays: number | null }) =>
+      api.post('/api/v1/users/bulk-generate-cert', { userIds, nodeId, password, passwordProtected, validDays: validDays === 0 ? null : validDays }),
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ['users'] })
       qc.invalidateQueries({ queryKey: ['expiring-certs'] })
@@ -152,7 +152,7 @@ export default function UsersPage() {
         userIds: Array.from(selectedUsers),
         nodeId: onlineNode.id,
         passwordProtected: false,
-        validDays: 3650
+        validDays: 0
       })
     }
   }
@@ -401,14 +401,14 @@ export default function UsersPage() {
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                    user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                    user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                    {user.isActive ? 'Active' : 'Disabled'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                    {user.is_active ? 'Active' : 'Disabled'}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-gray-500" suppressHydrationWarning>
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                  {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center justify-end gap-1">
@@ -543,7 +543,7 @@ export default function UsersPage() {
                 onClick={() => {
                   setShowCertModal(false)
                   setSelectedUserForCert(null)
-                  setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 3650 })
+                  setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 0 })
                 }} 
                 className="p-1 text-gray-400 hover:text-gray-600 rounded-md"
               >
@@ -584,7 +584,7 @@ export default function UsersPage() {
                   <option value="">Select a node...</option>
                   {nodes.filter((n: any) => n.status === 'online').map((node: any) => (
                     <option key={node.id} value={node.id}>
-                      {node.hostname} ({node.ipAddress})
+                      {node.hostname} ({node.ip_address})
                     </option>
                   ))}
                 </select>
@@ -602,15 +602,17 @@ export default function UsersPage() {
                   onChange={(e) => setCertForm({ ...certForm, validDays: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
+                  <option value="0">Unlimited (No expiration)</option>
+                  <option value="1">1 Day</option>
+                  <option value="7">1 Week (7 days)</option>
+                  <option value="14">2 Weeks (14 days)</option>
+                  <option value="30">1 Month (30 days)</option>
+                  <option value="90">3 Months (90 days)</option>
+                  <option value="180">6 Months (180 days)</option>
                   <option value="365">1 Year (365 days)</option>
-                  <option value="730">2 Years (730 days)</option>
-                  <option value="1825">5 Years (1,825 days)</option>
-                  <option value="3650">10 Years (3,650 days)</option>
-                  <option value="7300">20 Years (7,300 days)</option>
-                  <option value="18250">50 Years (18,250 days)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Longer validity = less maintenance, but less security if compromised
+                  {certForm.validDays === 0 ? 'Certificate will never expire' : 'Shorter validity = better security if compromised'}
                 </p>
               </div>
 
@@ -671,7 +673,7 @@ export default function UsersPage() {
                   onClick={() => {
                     setShowCertModal(false)
                     setSelectedUserForCert(null)
-                    setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 3650 })
+                    setCertForm({ nodeId: '', passwordProtected: false, password: '', validDays: 0 })
                   }}
                   className="flex-1"
                 >

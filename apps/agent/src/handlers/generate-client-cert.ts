@@ -17,11 +17,14 @@ interface GenerateClientCertResult {
 export async function handleGenerateClientCert(params: Record<string, unknown>): Promise<Record<string, unknown>> {
   const username = params.username as string | undefined
   const password = params.password as string | undefined
-  const validDays = (params.validDays as number | undefined) ?? 3650 // Default 10 years
+  const validDays = params.validDays as number | null | undefined
 
   if (!username || typeof username !== 'string') {
     throw new Error('Username is required')
   }
+
+  // If validDays is null or 0, set to 36500 days (100 years ~ unlimited)
+  const certValidDays = (validDays === null || validDays === 0) ? 36500 : (validDays ?? 3650)
 
   const EASYRSA_DIR = '/etc/openvpn/easy-rsa'
   
@@ -52,7 +55,7 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
     }
 
     // Generate client certificate
-    console.log(`Generating client certificate for ${username} (valid for ${validDays} days)...`)
+    console.log(`Generating client certificate for ${username} (valid for ${certValidDays === 36500 ? 'unlimited' : certValidDays + ' days'})...`)
     
     if (password) {
       // Generate with password-protected key
@@ -61,7 +64,7 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
           ...process.env, 
           EASYRSA_BATCH: '1',
           EASYRSA_PASSOUT: `pass:${password}`,
-          EASYRSA_CERT_EXPIRE: validDays.toString()
+          EASYRSA_CERT_EXPIRE: certValidDays.toString()
         },
         stdio: 'pipe'
       })
@@ -71,7 +74,7 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
         env: { 
           ...process.env, 
           EASYRSA_BATCH: '1',
-          EASYRSA_CERT_EXPIRE: validDays.toString()
+          EASYRSA_CERT_EXPIRE: certValidDays.toString()
         },
         stdio: 'pipe'
       })
@@ -81,9 +84,12 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
     const clientCert = readFileSync(certPath, 'utf-8')
     const clientKey = readFileSync(keyPath, 'utf-8')
 
-    // Calculate expiration date
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + validDays)
+    // Calculate expiration date (null if unlimited)
+    const expiresAt = certValidDays === 36500 ? null : (() => {
+      const date = new Date()
+      date.setDate(date.getDate() + certValidDays)
+      return date.toISOString()
+    })()
 
     console.log(`✓ Client certificate generated for ${username}`)
 
@@ -91,7 +97,7 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
       clientCert,
       clientKey,
       passwordProtected: !!password,
-      expiresAt: expiresAt.toISOString()
+      expiresAt: expiresAt
     }
   } catch (error: any) {
     console.error(`Failed to generate client certificate for ${username}:`, error.message)

@@ -90,7 +90,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
   )
 
   // POST /api/v1/users/:id/generate-cert
-  app.post<{ Params: { id: string }; Body: { nodeId: string; password?: string; passwordProtected?: boolean; validDays?: number } }>(
+  app.post<{ Params: { id: string }; Body: { nodeId: string; password?: string; passwordProtected?: boolean; validDays?: number | null } }>(
     '/users/:id/generate-cert',
     {
       onRequest: [app.authenticate],
@@ -105,14 +105,14 @@ const userRoutes: FastifyPluginAsync = async (app) => {
             nodeId: { type: 'string', format: 'uuid' },
             password: { type: 'string', description: 'Password to encrypt private key (optional)' },
             passwordProtected: { type: 'boolean', description: 'Whether to password-protect the key', default: false },
-            validDays: { type: 'number', description: 'Certificate validity in days (default: 3650 = 10 years)', default: 3650 }
+            validDays: { type: ['number', 'null'], description: 'Certificate validity in days (null = unlimited)', default: null }
           }
         }
       }
     },
     async (request, reply) => {
       const { id } = request.params
-      const { nodeId, password, passwordProtected, validDays = 3650 } = request.body
+      const { nodeId, password, passwordProtected, validDays = null } = request.body
 
       const authUser = request.user as { id: string; role: string }
       if (authUser.role !== 'admin') {
@@ -416,16 +416,25 @@ const userRoutes: FastifyPluginAsync = async (app) => {
         console.error('Failed to track download history:', err)
       }
 
-      const config = `client
+      // Get node configuration settings
+      const protocol = node.protocol || 'udp'
+      const cipher = node.cipher || 'AES-256-GCM'
+      const authDigest = node.auth_digest || 'SHA256'
+      const compression = node.compression || 'lz4-v2'
+      
+      // Build config with node-specific settings
+      let config = `client
 dev tun
-proto udp
+proto ${protocol}
 remote ${node.ip_address} ${node.port}
 resolv-retry infinite
 nobind
 persist-key
 persist-tun
 remote-cert-tls server
-cipher AES-256-GCM
+cipher ${cipher}
+auth ${authDigest}
+${compression !== 'none' ? `compress ${compression}` : ''}
 verb 3
 
 <ca>

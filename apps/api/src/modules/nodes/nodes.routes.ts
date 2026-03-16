@@ -2,6 +2,22 @@ import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
 import { RegisterNodeSchema, HeartbeatSchema } from '@ovpn/shared'
 
+interface NodeConfig {
+  port: number
+  protocol: string
+  tunnel_mode: string
+  vpn_network: string
+  vpn_netmask: string
+  dns_servers: string
+  push_routes: string
+  cipher: string
+  auth_digest: string
+  compression: string
+  keepalive_ping: number
+  keepalive_timeout: number
+  max_clients: number
+}
+
 const nodeRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/v1/nodes
   app.get(
@@ -22,6 +38,74 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
     },
   )
 
+  // GET /api/v1/nodes/:id/config
+  app.get<{ Params: { id: string } }>(
+    '/nodes/:id/config',
+    { onRequest: [app.authenticate], schema: { tags: ['nodes'], summary: 'Get node configuration', security: [{ bearerAuth: [] }] } },
+    async (request, reply) => {
+      const config = await app.db('vpn_nodes').where({ id: request.params.id }).first()
+      if (!config) return reply.status(404).send({ error: 'Not Found', message: 'Node not found' })
+      
+      return {
+        port: config.port,
+        protocol: config.protocol,
+        tunnel_mode: config.tunnel_mode,
+        vpn_network: config.vpn_network,
+        vpn_netmask: config.vpn_netmask,
+        dns_servers: config.dns_servers,
+        push_routes: config.push_routes,
+        cipher: config.cipher,
+        auth_digest: config.auth_digest,
+        compression: config.compression,
+        keepalive_ping: config.keepalive_ping,
+        keepalive_timeout: config.keepalive_timeout,
+        max_clients: config.max_clients,
+      }
+    },
+  )
+
+  // PUT /api/v1/nodes/:id/config
+  app.put<{ Params: { id: string }; Body: NodeConfig }>(
+    '/nodes/:id/config',
+    { onRequest: [app.authenticateAdmin], schema: { tags: ['nodes'], summary: 'Update node configuration', security: [{ bearerAuth: [] }] } },
+    async (request, reply) => {
+      const node = await app.db('vpn_nodes').where({ id: request.params.id }).first()
+      if (!node) return reply.status(404).send({ error: 'Not Found', message: 'Node not found' })
+
+      const config = request.body as NodeConfig
+      
+      // Update database
+      await app.db('vpn_nodes').where({ id: request.params.id }).update({
+        port: config.port,
+        protocol: config.protocol,
+        tunnel_mode: config.tunnel_mode,
+        vpn_network: config.vpn_network,
+        vpn_netmask: config.vpn_netmask,
+        dns_servers: config.dns_servers,
+        push_routes: config.push_routes,
+        cipher: config.cipher,
+        auth_digest: config.auth_digest,
+        compression: config.compression,
+        keepalive_ping: config.keepalive_ping,
+        keepalive_timeout: config.keepalive_timeout,
+        max_clients: config.max_clients,
+      })
+
+      // Create task to update server config
+      const taskId = crypto.randomUUID()
+      await app.db('tasks').insert({
+        id: taskId,
+        node_id: request.params.id,
+        action: 'update_server_config',
+        payload: JSON.stringify(config),
+        status: 'pending',
+        created_at: new Date(),
+      })
+
+      return { message: 'Configuration update scheduled', taskId }
+    },
+  )
+
   // POST /api/v1/nodes/register  (called by agent)
   app.post(
     '/nodes/register',
@@ -39,7 +123,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
         region: input.region ?? null,
         token,
         version: input.version,
-        status: 'online',
+        status: 'offline',
         last_seen: new Date(),
       })
 
@@ -81,7 +165,13 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
         await app.db('tasks').whereIn('id', ids).update({ status: 'running' })
       }
 
-      return { tasks }
+      // Parse payload JSON strings
+      const parsedTasks = tasks.map((task: any) => ({
+        ...task,
+        payload: typeof task.payload === 'string' ? JSON.parse(task.payload) : task.payload
+      }))
+
+      return { tasks: parsedTasks }
     },
   )
 

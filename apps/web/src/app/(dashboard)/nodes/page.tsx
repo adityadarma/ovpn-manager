@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
-import { Plus, Trash2, MapPin, Clock, Activity, Server, X, Copy, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, MapPin, Clock, Activity, Server, X, Copy, CheckCircle2, Settings } from 'lucide-react'
 import type { VpnNode } from '@ovpn/shared'
 import { Button } from '@/components/ui/button'
 
@@ -12,6 +12,22 @@ interface NodeForm {
   hostname: string
   ipAddress: string
   region: string
+}
+
+interface NodeConfig {
+  port: number
+  protocol: 'udp' | 'tcp'
+  tunnel_mode: 'full' | 'split'
+  vpn_network: string
+  vpn_netmask: string
+  dns_servers: string
+  push_routes: string
+  cipher: string
+  auth_digest: string
+  compression: string
+  keepalive_ping: number
+  keepalive_timeout: number
+  max_clients: number
 }
 
 interface RegisterResponse extends VpnNode {
@@ -25,6 +41,22 @@ export default function NodesPage() {
   const [registeredNode, setRegisteredNode] = useState<{ id: string; token: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set())
+  const [configNode, setConfigNode] = useState<string | null>(null)
+  const [nodeConfig, setNodeConfig] = useState<NodeConfig>({
+    port: 1194,
+    protocol: 'udp',
+    tunnel_mode: 'full',
+    vpn_network: '10.8.0.0',
+    vpn_netmask: '255.255.255.0',
+    dns_servers: '8.8.8.8,1.1.1.1',
+    push_routes: '',
+    cipher: 'AES-256-GCM',
+    auth_digest: 'SHA256',
+    compression: 'lz4-v2',
+    keepalive_ping: 10,
+    keepalive_timeout: 120,
+    max_clients: 100,
+  })
 
   const { data: nodes = [], isLoading } = useQuery<VpnNode[]>({
     queryKey: ['nodes'],
@@ -84,6 +116,27 @@ export default function NodesPage() {
       qc.invalidateQueries({ queryKey: ['nodes'] })
       setSelectedNodes(new Set())
       toast.success('Nodes deleted successfully')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const openConfigModal = async (nodeId: string) => {
+    try {
+      const config = await api.get<NodeConfig>(`/api/v1/nodes/${nodeId}/config`)
+      setNodeConfig(config)
+      setConfigNode(nodeId)
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load configuration')
+    }
+  }
+
+  const updateConfigMutation = useMutation({
+    mutationFn: (data: { nodeId: string; config: NodeConfig }) =>
+      api.put(`/api/v1/nodes/${data.nodeId}/config`, data.config),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['nodes'] })
+      setConfigNode(null)
+      toast.success('Configuration updated successfully')
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -190,7 +243,7 @@ export default function NodesPage() {
                     }`} />
                     <div>
                       <p className="font-semibold text-gray-900">{node.hostname}</p>
-                      <p className="text-xs font-mono text-gray-400 mt-0.5">{node.ipAddress}</p>
+                      <p className="text-xs font-mono text-gray-400 mt-0.5">{node.ip_address}</p>
                     </div>
                   </div>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
@@ -216,19 +269,26 @@ export default function NodesPage() {
                       <Server className="h-3.5 w-3.5 text-gray-300" /> v{node.version}
                     </div>
                   )}
-                  {node.lastSeen && (
+                  {node.last_seen && (
                     <div className="flex items-center gap-2" suppressHydrationWarning>
                       <Clock className="h-3.5 w-3.5 text-gray-300" /> 
-                      Last seen {new Date(node.lastSeen).toLocaleString()}
+                      Last seen {new Date(node.last_seen).toLocaleString()}
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <Activity className="h-3.5 w-3.5 text-gray-300" /> {node.activeSessions ?? 0} active sessions
+                    <Activity className="h-3.5 w-3.5 text-gray-300" /> {node.active_sessions ?? 0} active sessions
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end ml-7">
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-2 ml-7">
+                  <button
+                    onClick={() => openConfigModal(node.id)}
+                    className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Configure"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => { if (confirm('Remove node?')) deleteMutation.mutate(node.id) }}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -346,6 +406,203 @@ export default function NodesPage() {
                 </form>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Configure Node Modal */}
+      {configNode && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h2 className="font-semibold text-gray-900">Node Configuration</h2>
+                <p className="text-sm text-gray-400 mt-0.5">Update VPN server settings</p>
+              </div>
+              <button onClick={() => setConfigNode(null)} className="p-1 text-gray-400 hover:text-gray-600 rounded-md">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                updateConfigMutation.mutate({ nodeId: configNode, config: nodeConfig })
+              }}
+              className="p-5 space-y-4 max-h-[70vh] overflow-y-auto"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Port</label>
+                  <input
+                    type="number"
+                    value={nodeConfig.port}
+                    onChange={e => setNodeConfig({ ...nodeConfig, port: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Protocol</label>
+                  <select
+                    value={nodeConfig.protocol}
+                    onChange={e => setNodeConfig({ ...nodeConfig, protocol: e.target.value as 'udp' | 'tcp' })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="udp">UDP</option>
+                    <option value="tcp">TCP</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tunnel Mode</label>
+                <select
+                  value={nodeConfig.tunnel_mode}
+                  onChange={e => setNodeConfig({ ...nodeConfig, tunnel_mode: e.target.value as 'full' | 'split' })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="full">Full Tunnel (All traffic through VPN)</option>
+                  <option value="split">Split Tunnel (Only specific routes)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">VPN Network</label>
+                  <input
+                    type="text"
+                    value={nodeConfig.vpn_network}
+                    onChange={e => setNodeConfig({ ...nodeConfig, vpn_network: e.target.value })}
+                    placeholder="10.8.0.0"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Netmask</label>
+                  <input
+                    type="text"
+                    value={nodeConfig.vpn_netmask}
+                    onChange={e => setNodeConfig({ ...nodeConfig, vpn_netmask: e.target.value })}
+                    placeholder="255.255.255.0"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">DNS Servers</label>
+                <input
+                  type="text"
+                  value={nodeConfig.dns_servers}
+                  onChange={e => setNodeConfig({ ...nodeConfig, dns_servers: e.target.value })}
+                  placeholder="8.8.8.8,8.8.4.4"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+                <p className="text-xs text-gray-400 mt-1">Comma-separated DNS server IPs</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Push Routes</label>
+                <input
+                  type="text"
+                  value={nodeConfig.push_routes}
+                  onChange={e => setNodeConfig({ ...nodeConfig, push_routes: e.target.value })}
+                  placeholder="192.168.1.0/24,10.0.0.0/8"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                />
+                <p className="text-xs text-gray-400 mt-1">Comma-separated routes (for split tunnel)</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Cipher</label>
+                  <select
+                    value={nodeConfig.cipher}
+                    onChange={e => setNodeConfig({ ...nodeConfig, cipher: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="AES-256-GCM">AES-256-GCM</option>
+                    <option value="AES-128-GCM">AES-128-GCM</option>
+                    <option value="AES-256-CBC">AES-256-CBC</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Auth Digest</label>
+                  <select
+                    value={nodeConfig.auth_digest}
+                    onChange={e => setNodeConfig({ ...nodeConfig, auth_digest: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="SHA256">SHA256</option>
+                    <option value="SHA384">SHA384</option>
+                    <option value="SHA512">SHA512</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Compression</label>
+                <select
+                  value={nodeConfig.compression}
+                  onChange={e => setNodeConfig({ ...nodeConfig, compression: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="lz4-v2">LZ4-v2 (Recommended)</option>
+                  <option value="lz4">LZ4</option>
+                  <option value="lzo">LZO</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Keepalive Ping</label>
+                  <input
+                    type="number"
+                    value={nodeConfig.keepalive_ping}
+                    onChange={e => setNodeConfig({ ...nodeConfig, keepalive_ping: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">seconds</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Keepalive Timeout</label>
+                  <input
+                    type="number"
+                    value={nodeConfig.keepalive_timeout}
+                    onChange={e => setNodeConfig({ ...nodeConfig, keepalive_timeout: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">seconds</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Max Clients</label>
+                  <input
+                    type="number"
+                    value={nodeConfig.max_clients}
+                    onChange={e => setNodeConfig({ ...nodeConfig, max_clients: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfigNode(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateConfigMutation.isPending}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {updateConfigMutation.isPending ? 'Updating...' : 'Update Configuration'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

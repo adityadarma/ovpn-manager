@@ -5,12 +5,12 @@ export interface User {
   username: string
   email: string | null
   role: UserRole
-  isActive: boolean
-  lastLogin: string | null
-  createdAt: string
-  updatedAt: string
+  is_active: boolean
+  last_login: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface UserWithPassword extends User {
-  passwordHash: string
+  password_hash: string
 }

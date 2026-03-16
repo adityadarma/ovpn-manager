@@ -19,9 +19,70 @@ if [ -z "$ACTION" ]; then
     exit 1
 fi
 
+# Default values
 VPN_PORT=1194
+VPN_PROTOCOL="udp"
 VPN_NET="10.8.0.0"
 VPN_MASK="255.255.255.0"
+TUNNEL_MODE="full"  # full or split
+
+# Interactive configuration for install
+if [ "$ACTION" == "install" ]; then
+    echo "================================="
+    echo "OpenVPN Server Configuration"
+    echo "================================="
+    echo ""
+    
+    # Port configuration
+    read -p "Enter VPN port (default: 1194): " INPUT_PORT
+    VPN_PORT=${INPUT_PORT:-1194}
+    
+    # Protocol configuration
+    echo ""
+    echo "Select protocol:"
+    echo "1) UDP (recommended - faster, better for streaming)"
+    echo "2) TCP (more reliable, works through restrictive firewalls)"
+    read -p "Enter choice [1-2] (default: 1): " PROTO_CHOICE
+    PROTO_CHOICE=${PROTO_CHOICE:-1}
+    
+    if [ "$PROTO_CHOICE" == "2" ]; then
+        VPN_PROTOCOL="tcp"
+    else
+        VPN_PROTOCOL="udp"
+    fi
+    
+    # Tunnel mode configuration
+    echo ""
+    echo "Select tunnel mode:"
+    echo "1) Full Tunnel - Route all traffic through VPN (recommended for security)"
+    echo "2) Split Tunnel - Only route specific networks through VPN (better performance)"
+    read -p "Enter choice [1-2] (default: 1): " TUNNEL_CHOICE
+    TUNNEL_CHOICE=${TUNNEL_CHOICE:-1}
+    
+    if [ "$TUNNEL_CHOICE" == "2" ]; then
+        TUNNEL_MODE="split"
+    else
+        TUNNEL_MODE="full"
+    fi
+    
+    # VPN network configuration
+    echo ""
+    read -p "Enter VPN network (default: 10.8.0.0): " INPUT_NET
+    VPN_NET=${INPUT_NET:-10.8.0.0}
+    
+    echo ""
+    echo "Configuration Summary:"
+    echo "  Port: $VPN_PORT"
+    echo "  Protocol: $VPN_PROTOCOL"
+    echo "  Tunnel Mode: $TUNNEL_MODE"
+    echo "  VPN Network: $VPN_NET/24"
+    echo ""
+    read -p "Continue with this configuration? [Y/n]: " CONFIRM
+    if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
+        echo "Installation cancelled."
+        exit 0
+    fi
+fi
 
 # Detect OS
 if [ -f /etc/os-release ]; then
@@ -100,7 +161,7 @@ install_vpn() {
 
     cat <<EOF > /etc/openvpn/server/server.conf
 port $VPN_PORT
-proto udp
+proto $VPN_PROTOCOL
 dev tun
 
 ca /etc/openvpn/server/ca.crt
@@ -112,21 +173,35 @@ tls-auth /etc/openvpn/server/ta.key 0
 server $VPN_NET $VPN_MASK
 topology subnet
 
-# Default route push (Can be overridden by Manager Agent)
+# DNS servers
 push "dhcp-option DNS 8.8.8.8"
 push "dhcp-option DNS 1.1.1.1"
+
+# Tunnel mode configuration
+EOF
+
+    if [ "$TUNNEL_MODE" == "full" ]; then
+        cat <<EOF >> /etc/openvpn/server/server.conf
+# Full Tunnel - Route all traffic through VPN
+push "redirect-gateway def1 bypass-dhcp"
+EOF
+    else
+        cat <<EOF >> /etc/openvpn/server/server.conf
+# Split Tunnel - Only route VPN network
+# Additional routes can be pushed by Manager Agent
+# Example: push "route 192.168.1.0 255.255.255.0"
+EOF
+    fi
+
+    cat <<EOF >> /etc/openvpn/server/server.conf
 
 keepalive 10 120
 cipher AES-256-GCM
 persist-key
 persist-tun
 
-# Username/Password Authentication (configured by Manager Agent)
-# The agent will add auth-user-pass-verify script here
-# For now, client certificate auth is used as fallback
-# Uncomment below for username/password only (no client cert):
-# verify-client-cert none
-# username-as-common-name
+# Client certificate authentication (default)
+# For username/password auth, the Manager Agent will configure this later
 
 # Drop privileges (comment out if you have permission issues)
 user nobody
@@ -135,6 +210,18 @@ group nobody
 status /var/log/openvpn-status.log
 log /var/log/openvpn.log
 verb 3
+EOF
+
+    # Save configuration for reference
+    cat <<EOF > /etc/openvpn/server/install-config.txt
+VPN_PORT=$VPN_PORT
+VPN_PROTOCOL=$VPN_PROTOCOL
+VPN_NET=$VPN_NET
+VPN_MASK=$VPN_MASK
+TUNNEL_MODE=$TUNNEL_MODE
+PRIMARY_IF=$PRIMARY_IF
+PUBLIC_IP=$PUBLIC_IP
+INSTALLED_AT=$(date)
 EOF
 
     echo "================================="

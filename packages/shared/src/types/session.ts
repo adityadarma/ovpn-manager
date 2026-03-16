@@ -1,10 +1,10 @@
 export interface VpnSession {
   id: string
-  userId: string
-  nodeId: string
-  vpnIp: string
-  bytesSent: number
-  bytesReceived: number
-  connectedAt: string
-  disconnectedAt: string | null
+  user_id: string
+  node_id: string
+  vpn_ip: string
+  bytes_sent: number
+  bytes_received: number
+  connected_at: string
+  disconnected_at: string | null
 }

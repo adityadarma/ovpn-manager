@@ -1,9 +1,9 @@
 export interface Certificate {
   id: string
-  userId: string
-  certPath: string
-  serialNumber: string | null
+  user_id: string
+  cert_path: string
+  serial_number: string | null
   revoked: boolean
-  expiresAt: string | null
-  createdAt: string
+  expires_at: string | null
+  created_at: string
 }

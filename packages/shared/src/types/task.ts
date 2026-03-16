@@ -9,21 +9,22 @@ export type TaskAction =
   | 'add_firewall_rule'
   | 'remove_firewall_rule'
   | 'apply_network_policy'
+  | 'update_server_config'
 
 export interface Task {
   id: string
-  nodeId: string
+  node_id: string
   action: TaskAction
   payload: Record<string, unknown>
   status: TaskStatus
   result: Record<string, unknown> | null
-  errorMessage: string | null
-  createdAt: string
-  completedAt: string | null
+  error_message: string | null
+  created_at: string
+  completed_at: string | null
 }
 
 export type CreateTaskInput = {
-  nodeId: string
+  node_id: string
   action: TaskAction
   payload: Record<string, unknown>
 }

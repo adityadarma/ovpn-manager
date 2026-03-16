@@ -61,7 +61,7 @@ export default function DashboardPage() {
                   <div key={node.id} className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{node.hostname}</p>
-                      <p className="text-xs text-gray-400">{node.ipAddress}</p>
+                      <p className="text-xs text-gray-400">{node.ip_address}</p>
                     </div>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                       node.status === 'online' 
@@ -95,9 +95,9 @@ export default function DashboardPage() {
                 {sessions.slice(0, 5).map((s) => (
                   <div key={s.id} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{s.vpnIp}</p>
+                      <p className="text-sm font-medium text-gray-900">{s.vpn_ip}</p>
                       <p className="text-xs text-gray-400" suppressHydrationWarning>
-                        Connected {new Date(s.connectedAt).toLocaleTimeString()}
+                        Connected {new Date(s.connected_at).toLocaleTimeString()}
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">

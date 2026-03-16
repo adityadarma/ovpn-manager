@@ -2,10 +2,10 @@ export type PolicyAction = 'allow' | 'deny'
 
 export interface VpnPolicy {
   id: string
-  userId: string
-  allowedNetwork: string
+  user_id: string
+  allowed_network: string
   action: PolicyAction
   priority: number
   description: string | null
-  createdAt: string
+  created_at: string
 }
