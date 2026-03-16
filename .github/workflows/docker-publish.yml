@@ -15,8 +15,12 @@ on:
         default: true
         type: boolean
   
-  # Optional: Auto-trigger on push with path filters
   push:
+    # Auto-trigger on version tags
+    tags:
+      - 'v*.*.*'
+    
+    # Auto-trigger on version tags and optionally on file changes
     branches:
       - main
     paths:
@@ -24,11 +28,6 @@ on:
       - 'apps/web/**'
       - 'apps/agent/**'
       - 'packages/**'
-  
-  # Auto-trigger on version tags
-  push:
-    tags:
-      - 'v*.*.*'
 
 env:
   REGISTRY: ghcr.io
