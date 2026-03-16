@@ -82,6 +82,9 @@ install_vpn() {
     EASYRSA_BATCH=1 ./easyrsa build-server-full server nopass
     EASYRSA_BATCH=1 ./easyrsa gen-dh
     
+    # Create server directory before generating keys
+    mkdir -p /etc/openvpn/server
+    
     # Generate TLS Key
     openvpn --genkey secret /etc/openvpn/server/ta.key
 
@@ -118,15 +121,12 @@ cipher AES-256-GCM
 persist-key
 persist-tun
 
-# Authentication via Manager Agent (No client certs needed)
-verify-client-cert none
-username-as-common-name
-script-security 3
+# Client certificate authentication (default)
+# For username/password auth, the Manager Agent will configure this later
 
-# TODO: Agent will inject auth-user-pass-verify scripts here
-
+# Drop privileges (comment out if you have permission issues)
 user nobody
-group nogroup
+group nobody
 
 status /var/log/openvpn-status.log
 log /var/log/openvpn.log
@@ -159,8 +159,21 @@ EOF
     systemctl enable --now openvpn-iptables.service
 
     # Start OpenVPN Service
-    systemctl enable openvpn-server@server.service || systemctl enable openvpn@server.service
-    systemctl restart openvpn-server@server.service || systemctl restart openvpn@server.service
+    echo "Starting OpenVPN service..."
+    systemctl enable openvpn-server@server.service 2>/dev/null || systemctl enable openvpn@server.service 2>/dev/null
+    systemctl restart openvpn-server@server.service 2>/dev/null || systemctl restart openvpn@server.service 2>/dev/null
+    
+    # Wait a moment for service to start
+    sleep 2
+    
+    # Check if service is running
+    if systemctl is-active --quiet openvpn-server@server.service 2>/dev/null || systemctl is-active --quiet openvpn@server.service 2>/dev/null; then
+        echo "✓ OpenVPN service started successfully"
+    else
+        echo "⚠ Warning: OpenVPN service may not have started properly"
+        echo "Check status with: systemctl status openvpn-server@server.service"
+        echo "Check logs with: journalctl -xeu openvpn-server@server.service"
+    fi
 
     echo "================================="
     echo "INSTALLATION COMPLETE"
@@ -168,12 +181,18 @@ EOF
     echo "OpenVPN is running on UDP port $VPN_PORT (Public IP: $PUBLIC_IP)"
     echo ""
     echo "To connect this node to OpenVPN Manager:"
-    echo "1. Run the Node Agent and pass the Web Dashboard AGENT Credentials."
+    echo "1. Register this node in the Web UI (Nodes → Add Node)"
+    echo "2. Install the agent: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash"
     echo ""
     echo "Certificates generated. The CA and TA paths are:"
     echo " - CA Cert: /etc/openvpn/server/ca.crt"
     echo " - TA Key : /etc/openvpn/server/ta.key"
-    echo "These values are required to generate .ovpn files out of your Dashboard."
+    echo "These values are required to generate .ovpn files in your Dashboard."
+    echo ""
+    echo "Useful commands:"
+    echo " - Check status: systemctl status openvpn-server@server.service"
+    echo " - View logs: tail -f /var/log/openvpn.log"
+    echo " - Check connections: cat /var/log/openvpn-status.log"
 }
 
 uninstall_vpn() {

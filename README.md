@@ -144,50 +144,113 @@ Policies define Access Control Lists (ACL).
 
 ## 💻 VPN Server Installation (Node Agent)
 
-The "Agent" acts as the middleman between your central Manager API and the local OpenVPN daemon holding the client connections. We provide an automated installation script that will configure OpenVPN natively on your Linux server (Ubuntu, Debian, CentOS, AlmaLinux, RHEL, etc) and set up routing rules automatically.
+The "Agent" acts as the middleman between your central Manager API and the local OpenVPN daemon holding the client connections. We provide automated installation scripts for different deployment scenarios.
 
-### Option 1: One-Line Install (Recommended)
+### Option 1: Standalone Agent (Docker) - Recommended ⭐
+
+This is the easiest way to deploy an agent on a VPN node. It will:
+- Install Docker (if not present)
+- Install OpenVPN server (if not present)
+- Configure and start the agent in a Docker container
+- Set up systemd service for auto-start
 
 ```bash
-# Download and run the VPN server installer
+# One-line install
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+```
+
+**Prerequisites:**
+1. Register the node in Manager Web UI first (Nodes → Add Node)
+2. Copy the Node ID and Secret Token
+3. Run the installer and provide the credentials when prompted
+
+**Management Commands:**
+```bash
+# Start agent
+systemctl start ovpn-agent
+# or
+/opt/ovpn-agent/start.sh
+
+# Stop agent
+systemctl stop ovpn-agent
+# or
+/opt/ovpn-agent/stop.sh
+
+# View logs
+/opt/ovpn-agent/logs.sh
+
+# Check status
+/opt/ovpn-agent/status.sh
+```
+
+### Option 2: Manual Docker Deployment
+
+If you prefer manual control:
+
+```bash
+# 1. Install OpenVPN server
 curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
+
+# 2. Download agent compose file
+mkdir -p /opt/ovpn-agent
+cd /opt/ovpn-agent
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.agent.yml -O docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.agent -O .env
+
+# 3. Configure .env with your credentials
+nano .env
+
+# 4. Start agent
+docker compose up -d
 ```
 
-### Option 2: Manual Install (With Repository)
+### Option 3: Native Installation (With Repository)
 
-1. SSH into your actual VPN Server as root.
-2. Clone the repository and run the auto installer:
+For development or custom deployments:
+
+1. SSH into your VPN Server as root
+2. Clone and build:
    ```bash
    git clone https://github.com/adityadarma/ovpn-manager.git
    cd ovpn-manager
+   
+   # Install OpenVPN
    chmod +x scripts/vpn-server.sh
    sudo ./scripts/vpn-server.sh install
-   ```
-
-### Connect Agent to Manager
-
-3. Once OpenVPN is installed and running, you must connect it to the central Manager by compiling and running the node agent.
-   ```bash
+   
+   # Build agent
    pnpm install
    pnpm --filter @ovpn/agent build
    ```
-4. Set the environment variables obtained from **Step 3** of the Web UI usage guide:
+
+3. Configure environment:
    ```bash
    export AGENT_MANAGER_URL=https://manager.yourdomain.com
-   export AGENT_NODE_ID=<uuid-generated-for-this-node>
-   export AGENT_SECRET_TOKEN=<the-secret-token>
+   export AGENT_NODE_ID=<uuid-from-web-ui>
+   export AGENT_SECRET_TOKEN=<secret-from-web-ui>
    ```
-5. Run the Agent:
+
+4. Run agent:
    ```bash
    node apps/agent/dist/index.js
    ```
 
-*(For production, we recommend running the agent using `systemd` or `PM2` to ensure it restarts upon failure).*
+*(For production, use `systemd` or `PM2` to ensure auto-restart)*
 
-### Uninstall VPN Server
+### Uninstall
 
+**Standalone Agent:**
+```bash
+systemctl stop ovpn-agent
+systemctl disable ovpn-agent
+rm -rf /opt/ovpn-agent
+rm -f /etc/systemd/system/ovpn-agent.service
+systemctl daemon-reload
+```
+
+**OpenVPN Server:**
 ```bash
 sudo ./vpn-server.sh uninstall
 ```

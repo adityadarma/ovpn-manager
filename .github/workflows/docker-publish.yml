@@ -1,23 +1,112 @@
 name: Build and Push Docker Images
 
 on:
+  # Manual trigger only (default)
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to build (comma-separated: api,web,agent or "all")'
+        required: true
+        default: 'all'
+        type: string
+      push_images:
+        description: 'Push images to registry'
+        required: true
+        default: true
+        type: boolean
+  
+  # Optional: Auto-trigger on push with path filters
   push:
     branches:
       - main
-      - develop
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'apps/agent/**'
+      - 'packages/**'
+  
+  # Auto-trigger on version tags
+  push:
     tags:
       - 'v*.*.*'
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ovpn-manager
 
 jobs:
+  # Determine which services to build
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-services.outputs.services }}
+      should_build: ${{ steps.set-services.outputs.should_build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Determine services to build
+        id: set-services
+        run: |
+          # Default: build all services
+          SERVICES='["api","web","agent"]'
+          SHOULD_BUILD="true"
+          
+          # If manual trigger with specific services
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            INPUT="${{ inputs.services }}"
+            if [ "$INPUT" != "all" ]; then
+              # Convert comma-separated to JSON array
+              SERVICES=$(echo "$INPUT" | jq -R -s -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+            fi
+            SHOULD_BUILD="${{ inputs.push_images }}"
+          fi
+          
+          # If triggered by tag, build all
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            SERVICES='["api","web","agent"]'
+            SHOULD_BUILD="true"
+          fi
+          
+          # If triggered by push, detect changed files
+          if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" != refs/tags/* ]]; then
+            CHANGED_SERVICES=()
+            
+            # Check which apps changed
+            if git diff --name-only HEAD^ HEAD | grep -q "^apps/api/"; then
+              CHANGED_SERVICES+=("api")
+            fi
+            if git diff --name-only HEAD^ HEAD | grep -q "^apps/web/"; then
+              CHANGED_SERVICES+=("web")
+            fi
+            if git diff --name-only HEAD^ HEAD | grep -q "^apps/agent/"; then
+              CHANGED_SERVICES+=("agent")
+            fi
+            
+            # Check if shared packages changed (rebuild all)
+            if git diff --name-only HEAD^ HEAD | grep -q "^packages/"; then
+              CHANGED_SERVICES=("api" "web" "agent")
+            fi
+            
+            # If no services changed, skip build
+            if [ ${#CHANGED_SERVICES[@]} -eq 0 ]; then
+              echo "No service files changed, skipping build"
+              SHOULD_BUILD="false"
+            else
+              SERVICES=$(printf '%s\n' "${CHANGED_SERVICES[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            fi
+          fi
+          
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "should_build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+          echo "Services to build: $SERVICES"
+          echo "Should build: $SHOULD_BUILD"
+
   build-and-push:
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,13 +114,7 @@ jobs:
     
     strategy:
       matrix:
-        service:
-          - name: api
-            dockerfile: apps/api/Dockerfile
-          - name: web
-            dockerfile: apps/web/Dockerfile
-          - name: agent
-            dockerfile: apps/agent/Dockerfile
+        service: ${{ fromJson(needs.prepare.outputs.services) }}
     
     steps:
       - name: Checkout repository
@@ -56,29 +139,29 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=raw,value=${{ matrix.service.name }}
-            type=raw,value=${{ matrix.service.name }}-{{branch}},enable=${{ github.ref != format('refs/heads/{0}', 'main') }}
-            type=semver,pattern={{version}}-${{ matrix.service.name }}
+            type=raw,value=${{ matrix.service }}
+            type=raw,value=${{ matrix.service }}-{{branch}},enable=${{ github.ref != format('refs/heads/{0}', 'main') }}
+            type=semver,pattern={{version}}-${{ matrix.service }}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.service.dockerfile }}
-          push: ${{ github.event_name != 'pull_request' }}
+          file: apps/${{ matrix.service }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.push_images == true) }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           platforms: linux/amd64,linux/arm64
       
       - name: Image digest
         run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
   
   test-deployment:
-    needs: build-and-push
+    needs: [prepare, build-and-push]
+    if: needs.prepare.outputs.should_build == 'true' && (github.event_name != 'workflow_dispatch' || inputs.push_images == true)
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
     
     steps:
       - name: Checkout repository
