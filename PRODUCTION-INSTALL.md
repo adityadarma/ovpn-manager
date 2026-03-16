@@ -1,6 +1,6 @@
 # Production Installation Guide (No Repository Clone)
 
-This guide shows you how to deploy OVPN Platform in production without cloning the repository. All you need is Docker and a few configuration files.
+This guide shows you how to deploy OVPN Manager in production without cloning the repository. All you need is Docker and a few configuration files.
 
 ## 📋 Prerequisites
 
@@ -34,7 +34,7 @@ Follow the steps below for full control over the installation process.
 
 ## 📥 Step 1: Download Configuration Files
 
-Create a directory for OVPN Platform:
+Create a directory for OVPN Manager:
 
 ```bash
 mkdir -p /opt/ovpn-manager
@@ -149,7 +149,7 @@ Expected output:
 ```
 NAME            IMAGE                                    STATUS
 ovpn-api        ghcr.io/adityadarma/ovpn-manager:api    Up (healthy)
-ovpn-web        ghcr.io/adityadarma/ovpn-platform:web    Up
+ovpn-web        ghcr.io/adityadarma/ovpn-manager:web    Up
 ```
 
 Check logs:
@@ -175,7 +175,7 @@ Expected response:
 
 ---
 
-## 🌐 Step 5: Access the Platform
+## 🌐 Step 5: Access the Manager
 
 Open your browser and navigate to:
 
@@ -317,7 +317,7 @@ sudo ufw enable
 Create backup script:
 
 ```bash
-sudo nano /opt/ovpn-platform/backup.sh
+sudo nano /opt/ovpn-manager/backup.sh
 ```
 
 Add this content:
@@ -339,13 +339,13 @@ fi
 
 # Backup PostgreSQL
 if [ "$DATABASE_TYPE" = "postgres" ]; then
-    docker compose -f /opt/ovpn-platform/docker-compose.yml \
+    docker compose -f /opt/ovpn-manager/docker-compose.yml \
         exec -T postgres pg_dump -U ovpn ovpn > $BACKUP_DIR/ovpn-postgres-$DATE.sql
 fi
 
 # Backup MySQL
 if [ "$DATABASE_TYPE" = "mysql" ]; then
-    docker compose -f /opt/ovpn-platform/docker-compose.yml \
+    docker compose -f /opt/ovpn-manager/docker-compose.yml \
         exec -T mariadb mysqldump -u ovpn -p$MYSQL_PASSWORD ovpn > $BACKUP_DIR/ovpn-mysql-$DATE.sql
 fi
 
@@ -358,7 +358,7 @@ echo "Backup completed: $DATE"
 Make it executable:
 
 ```bash
-sudo chmod +x /opt/ovpn-platform/backup.sh
+sudo chmod +x /opt/ovpn-manager/backup.sh
 ```
 
 Add to crontab (daily at 2 AM):
@@ -370,17 +370,17 @@ sudo crontab -e
 Add this line:
 
 ```
-0 2 * * * /opt/ovpn-platform/backup.sh >> /var/log/ovpn-backup.log 2>&1
+0 2 * * * /opt/ovpn-manager/backup.sh >> /var/log/ovpn-backup.log 2>&1
 ```
 
 ---
 
-## 🔄 Updating the Platform
+## 🔄 Updating the manager
 
 ### Pull Latest Images
 
 ```bash
-cd /opt/ovpn-platform
+cd /opt/ovpn-manager
 docker compose pull
 ```
 
@@ -557,29 +557,29 @@ Install monitoring tools like:
 
 ## 🗑️ Uninstallation
 
-If you need to remove OVPN Platform:
+If you need to remove OVPN Manager:
 
 ### Quick Uninstall
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-platform/main/scripts/uninstall-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/uninstall-prod.sh | sudo bash
 ```
 
 ### Manual Uninstall
 
 ```bash
 # Stop services
-cd /opt/ovpn-platform
+cd /opt/ovpn-manager
 docker compose down
 
 # Remove volumes (WARNING: This deletes all data!)
 docker volume rm ovpn_api_data ovpn_postgres_data ovpn_mariadb_data
 
 # Remove images
-docker rmi $(docker images | grep ovpn-platform | awk '{print $3}')
+docker rmi $(docker images | grep ovpn-manager | awk '{print $3}')
 
 # Remove installation directory
-sudo rm -rf /opt/ovpn-platform
+sudo rm -rf /opt/ovpn-manager
 
 # Remove backups (optional)
 sudo rm -rf /opt/ovpn-backups
@@ -599,7 +599,7 @@ sudo systemctl reload nginx
 
 - [Full Docker Documentation](DOCKER.md)
 - [Main README](README.md)
-- [GitHub Repository](https://github.com/adityadarma/ovpn-platform)
+- [GitHub Repository](https://github.com/adityadarma/ovpn-manager)
 
 ---
 
@@ -618,7 +618,7 @@ If you encounter issues:
 
 ```bash
 # Installation directory
-cd /opt/ovpn-platform
+cd /opt/ovpn-manager
 
 # Start services
 docker compose up -d
@@ -629,12 +629,12 @@ docker compose down
 # View logs
 docker compose logs -f
 
-# Update platform
+# Update manager
 docker compose pull
 docker compose up -d
 
 # Backup (if script created)
-/opt/ovpn-platform/backup.sh
+/opt/ovpn-manager/backup.sh
 
 # Access
 # Web UI: http://your-server:3000

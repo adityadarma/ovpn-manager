@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'OpenVPN Manager',
-  description: 'Centralized OpenVPN Management Platform',
+  description: 'Centralized OpenVPN Management',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

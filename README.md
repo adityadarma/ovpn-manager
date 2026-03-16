@@ -1,10 +1,10 @@
-# OpenVPN Manager — Modern VPN Management Platform
+# OpenVPN Manager — Modern VPN Management
 
 ![Build Status](https://github.com/adityadarma/ovpn-manager/actions/workflows/docker-publish.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
 
-A centralized, open-source VPN management platform inspired by enterprise solutions (like Pritunl and Tailscale Admin). Built around OpenVPN with a modern TypeScript monorepo architecture, it provides a seamless Web UI for provisioning users, managing network access (CIDRs), clustering VPN nodes, and pushing real-time connection policies.
+A centralized, open-source VPN management inspired by enterprise solutions (like Pritunl and Tailscale Admin). Built around OpenVPN with a modern TypeScript monorepo architecture, it provides a seamless Web UI for provisioning users, managing network access (CIDRs), clustering VPN nodes, and pushing real-time connection policies.
 
 ## Key Features
 
@@ -94,7 +94,7 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-### 4. Running the Platform
+### 4. Running the Manager
 
 Start both the API server and Web Dashboard in development mode:
 ```bash
