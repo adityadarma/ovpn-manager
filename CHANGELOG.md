@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2024-03-16
+
 ### Fixed
-- Added detailed logging for agent task result reporting to diagnose certificate generation timeout issues
+- **Certificate Generation Timeout**: Fixed validation error in TaskResultSchema that prevented agent from reporting task results
+  - Changed `errorMessage` field to accept `null` values (`.nullable()`)
+  - Agent was sending `errorMessage: null` but schema only accepted `string | undefined`
+  - This was causing HTTP 500 errors and preventing certificate generation from completing
+- Added detailed logging for agent task result reporting to diagnose issues
 - Added logging in API task result endpoint to track incoming agent requests
+- Added version identifier in API startup logs for debugging
+- **VPN Server Installation**: Fixed multiple issues on Debian 13
+  - Missing directory creation for ta.key
+  - Removed problematic `verify-client-cert none` directive
+  - Changed `group nogroup` to `group nobody` for cross-distro compatibility
+- **Certificate Generation**: Fixed "Username is required" error
+  - Proper JSON payload parsing in agent task polling
+- **Database Compatibility**: Fixed SQLite date calculation in certificate renewal
+- **Type Errors**: Fixed TypeScript errors related to field naming inconsistencies
+- **IP Address Display**: Fixed missing IP addresses in node selection dropdowns
 
 ### Added
 
@@ -163,18 +179,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Certificate Validity**: Default changed from 365 days to unlimited (null in database)
 - **.ovpn Generation**: Now uses node-specific settings (protocol, cipher, compression, etc.)
 - **GitHub Actions**: Changed to manual trigger by default with service selection options
-
-### Fixed
-
-- **VPN Server Installation**: Fixed multiple issues on Debian 13
-  - Missing directory creation for ta.key
-  - Removed problematic `verify-client-cert none` directive
-  - Changed `group nogroup` to `group nobody` for cross-distro compatibility
-- **Certificate Generation**: Fixed "Username is required" error
-  - Proper JSON payload parsing in agent task polling
-- **Database Compatibility**: Fixed SQLite date calculation in certificate renewal
-- **Type Errors**: Fixed TypeScript errors related to field naming inconsistencies
-- **IP Address Display**: Fixed missing IP addresses in node selection dropdowns
 
 ### Security
 
