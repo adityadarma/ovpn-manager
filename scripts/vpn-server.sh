@@ -145,9 +145,10 @@ install_vpn() {
     
     # Create server directory before generating keys
     mkdir -p /etc/openvpn/server
+    mkdir -p /var/log/openvpn && chown nobody:nogroup /var/log/openvpn
     
-    # Generate TLS Key
-    openvpn --genkey secret /etc/openvpn/server/ta.key
+    # Generate TLS-Crypt Key (more secure than tls-auth)
+    openvpn --genkey secret /etc/openvpn/server/tls-crypt.key
 
     # Move files to openvpn server directory
     cp pki/ca.crt /etc/openvpn/server/
@@ -168,7 +169,7 @@ ca /etc/openvpn/server/ca.crt
 cert /etc/openvpn/server/server.crt
 key /etc/openvpn/server/server.key
 dh /etc/openvpn/server/dh.pem
-tls-auth /etc/openvpn/server/ta.key 0
+tls-crypt /etc/openvpn/server/tls-crypt.key
 
 server $VPN_NET $VPN_MASK
 topology subnet
@@ -207,8 +208,8 @@ persist-tun
 user nobody
 group nobody
 
-status /var/log/openvpn-status.log
-log /var/log/openvpn.log
+status /var/log/openvpn/status.log
+log /var/log/openvpn/openvpn.log
 verb 3
 EOF
 
@@ -300,9 +301,9 @@ EOF
     echo "1. Register this node in the Web UI (Nodes → Add Node)"
     echo "2. Install the agent: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash"
     echo ""
-    echo "Certificates generated. The CA and TA paths are:"
+    echo "Certificates generated. The CA and TLS-Crypt paths are:"
     echo " - CA Cert: /etc/openvpn/server/ca.crt"
-    echo " - TA Key : /etc/openvpn/server/ta.key"
+    echo " - TLS-Crypt Key: /etc/openvpn/server/tls-crypt.key"
     echo "These values are required to generate .ovpn files in your Dashboard."
     echo ""
     echo "Useful commands:"

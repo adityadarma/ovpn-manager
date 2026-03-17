@@ -48,7 +48,7 @@ ca /etc/openvpn/server/ca.crt
 cert /etc/openvpn/server/server.crt
 key /etc/openvpn/server/server.key
 dh /etc/openvpn/server/dh.pem
-tls-auth /etc/openvpn/server/ta.key 0
+tls-crypt /etc/openvpn/server/tls-crypt.key
 
 server ${config.vpnNetwork} ${config.vpnNetmask}
 topology subnet
@@ -86,13 +86,13 @@ persist-tun
     }
 
     newConfig += `
-# Security
+# Drop privileges (comment out if you have permission issues)
 user nobody
 group nobody
 
 # Logging
-status /var/log/openvpn-status.log
-log /var/log/openvpn.log
+status /var/log/openvpn/status.log
+log /var/log/openvpn/openvpn.log
 verb 3
 `
 

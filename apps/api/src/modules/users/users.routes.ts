@@ -390,7 +390,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
       }
 
       if (!node.ca_cert || !node.ta_key) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Node has not uploaded certificates yet' })
+        return reply.status(400).send({ error: 'Bad Request', message: 'Node has not uploaded certificates yet (CA cert and TLS key required)' })
       }
 
       // Check if user has client certificate
@@ -449,10 +449,9 @@ ${user.client_cert.trim()}
 ${user.client_key.trim()}
 </key>
 
-<tls-auth>
+<tls-crypt>
 ${node.ta_key.trim()}
-</tls-auth>
-key-direction 1
+</tls-crypt>
 `
       reply.header('Content-Disposition', `attachment; filename="${user.username}-${node.hostname}.ovpn"`)
       reply.type('application/x-openvpn-profile')

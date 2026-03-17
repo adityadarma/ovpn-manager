@@ -23,7 +23,8 @@ A centralized, open-source VPN management inspired by enterprise solutions (like
   - Customize VPN settings per node (port, protocol, tunnel mode)
   - Full/Split tunnel support
   - Custom DNS servers and routes
-  - Configurable encryption (cipher, auth digest, compression)
+  - Configurable encryption (AES-256-GCM cipher, SHA256 auth, LZ4 compression)
+  - TLS-Crypt for enhanced security (encrypts + authenticates TLS handshake)
   - Web-based configuration management
 
 ## Architecture

@@ -356,7 +356,7 @@ sudo ./scripts/vpn-server.sh install
 
 The script will:
 - ✅ Install OpenVPN and dependencies
-- ✅ Generate PKI certificates (CA, server cert, DH params, TLS-auth key)
+- ✅ Generate PKI certificates (CA, server cert, DH params, TLS-Crypt key)
 - ✅ Configure server settings (customizable)
 - ✅ Set up NAT and IP forwarding
 - ✅ Create systemd services
