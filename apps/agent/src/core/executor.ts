@@ -8,6 +8,7 @@ import { handleAddFirewallRule } from '../handlers/add-firewall-rule'
 import { handleRemoveFirewallRule } from '../handlers/remove-firewall-rule'
 import { handleGenerateClientCert } from '../handlers/generate-client-cert'
 import { handleUpdateServerConfig } from '../handlers/update-server-config'
+import { handleSyncCertificates } from '../handlers/sync-certificates'
 
 interface Task {
   id: string
@@ -26,6 +27,7 @@ const HANDLERS: Partial<Record<TaskAction, HandlerFn>> = {
   add_firewall_rule: handleAddFirewallRule,
   remove_firewall_rule: handleRemoveFirewallRule,
   update_server_config: handleUpdateServerConfig,
+  sync_certificates: handleSyncCertificates,
 }
 
 export async function executeTask(env: AgentEnv, task: Task): Promise<void> {

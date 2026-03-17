@@ -285,6 +285,83 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(204).send()
     },
   )
+
+  // POST /api/v1/nodes/sync-certs (called by agent or sync script)
+  app.post<{ Body: { ca_cert: string; ta_key: string } }>(
+    '/nodes/sync-certs',
+    { 
+      schema: { 
+        tags: ['nodes'], 
+        summary: 'Sync node certificates (CA and TLS key)',
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: 'object',
+          required: ['ca_cert', 'ta_key'],
+          properties: {
+            ca_cert: { type: 'string', description: 'CA certificate content' },
+            ta_key: { type: 'string', description: 'TLS-Crypt or TLS-Auth key content' }
+          }
+        }
+      } 
+    },
+    async (request, reply) => {
+      // Extract node token from Authorization header
+      const authHeader = request.headers.authorization
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Node token required' })
+      }
+
+      const token = authHeader.substring(7)
+      
+      // Find node by token
+      const node = await app.db('vpn_nodes').where({ token }).first()
+      if (!node) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid node token' })
+      }
+
+      const { ca_cert, ta_key } = request.body
+
+      if (!ca_cert || !ta_key) {
+        return reply.status(400).send({ 
+          error: 'Bad Request', 
+          message: 'Both ca_cert and ta_key are required' 
+        })
+      }
+
+      // Validate certificate format (basic check)
+      if (!ca_cert.includes('BEGIN CERTIFICATE') || !ta_key.includes('BEGIN OpenVPN Static key')) {
+        return reply.status(400).send({ 
+          error: 'Bad Request', 
+          message: 'Invalid certificate or key format' 
+        })
+      }
+
+      try {
+        // Update node certificates
+        await app.db('vpn_nodes')
+          .where({ id: node.id })
+          .update({
+            ca_cert: ca_cert.trim(),
+            ta_key: ta_key.trim(),
+            last_seen: new Date()
+          })
+
+        app.log.info(`Certificates synced for node ${node.id}`)
+
+        return reply.send({ 
+          success: true, 
+          message: 'Certificates synced successfully',
+          node_id: node.id
+        })
+      } catch (error: any) {
+        app.log.error(`Failed to sync certificates for node ${node.id}:`, error)
+        return reply.status(500).send({ 
+          error: 'Internal Server Error', 
+          message: 'Failed to sync certificates' 
+        })
+      }
+    },
+  )
 }
 
 export default nodeRoutes

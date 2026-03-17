@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SELinux/AppArmor policies
   - Security checklist and best practices
   - See `docs/SECURITY-HARDENING.md`
+- **Certificate Sync Feature**: Auto-sync CA cert and TLS key from nodes to dashboard
+  - Manual sync script: `scripts/sync-node-certs.sh`
+  - Agent handler: `sync_certificates` task action
+  - API endpoint: `POST /api/v1/nodes/sync-certs`
+  - Prevents "tls-crypt unwrap error" after server setup/changes
+  - See `docs/CERTIFICATE-SYNC.md`
 
 ### Fixed
 - **Agent Certificate Generation**: Fixed "easyrsa: not found" error

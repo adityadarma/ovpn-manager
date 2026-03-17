@@ -10,6 +10,7 @@ export type TaskAction =
   | 'remove_firewall_rule'
   | 'apply_network_policy'
   | 'update_server_config'
+  | 'sync_certificates'
 
 export interface Task {
   id: string
