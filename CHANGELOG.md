@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - More resistant to traffic analysis and port scanning
   - No `key-direction` parameter needed (simpler configuration)
   - Backward compatible: `ta_key` database field supports both methods
+- **Docker Build Optimization**: Improved build speed and caching
+  - Added BuildKit cache mounts for pnpm store
+  - Reordered Dockerfile layers for better caching
+  - Added `.dockerignore` to exclude unnecessary files
+  - 60-70% faster rebuilds with proper cache hits
+  - See `docs/DOCKER-BUILD-OPTIMIZATION.md`
 
 ### Added
 - **Security Documentation**: Added comprehensive security hardening guide

@@ -5,6 +5,14 @@ export async function handleSyncCertificates(): Promise<Record<string, unknown>>
   const TLS_CRYPT_PATH = '/etc/openvpn/server/tls-crypt.key'
   const TLS_AUTH_PATH = '/etc/openvpn/server/ta.key'
 
+  // Get agent configuration from environment
+  const MANAGER_URL = process.env.AGENT_MANAGER_URL
+  const NODE_TOKEN = process.env.AGENT_SECRET_TOKEN
+
+  if (!MANAGER_URL || !NODE_TOKEN) {
+    throw new Error('AGENT_MANAGER_URL and AGENT_SECRET_TOKEN must be set')
+  }
+
   // Check if CA cert exists
   if (!existsSync(CA_CERT_PATH)) {
     throw new Error(`CA certificate not found at ${CA_CERT_PATH}`)
@@ -34,13 +42,40 @@ export async function handleSyncCertificates(): Promise<Record<string, unknown>>
     console.log(`[sync-certs] CA Cert: ${caCert.length} bytes`)
     console.log(`[sync-certs] TLS Key: ${tlsKey.length} bytes (${tlsKeyPath.includes('tls-crypt') ? 'tls-crypt' : 'tls-auth'})`)
 
+    // Upload certificates to API
+    const syncUrl = `${MANAGER_URL}/api/v1/nodes/sync-certs`
+    console.log(`[sync-certs] Uploading certificates to: ${syncUrl}`)
+
+    const response = await fetch(syncUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NODE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ca_cert: caCert.trim(),
+        ta_key: tlsKey.trim(),
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to upload certificates: HTTP ${response.status} - ${errorText}`)
+    }
+
+    const result = await response.json() as { success: boolean; message: string; node_id: string }
+    console.log('[sync-certs] ✓ Certificates uploaded successfully to database')
+
     return {
-      ca_cert: caCert.trim(),
-      ta_key: tlsKey.trim(),
-      tls_method: tlsKeyPath.includes('tls-crypt') ? 'tls-crypt' : 'tls-auth'
+      success: true,
+      message: 'Certificates synced to database',
+      ca_cert_size: caCert.length,
+      ta_key_size: tlsKey.length,
+      tls_method: tlsKeyPath.includes('tls-crypt') ? 'tls-crypt' : 'tls-auth',
+      node_id: result.node_id
     }
   } catch (error: any) {
-    console.error('[sync-certs] Failed to read certificates:', error.message)
+    console.error('[sync-certs] Failed to sync certificates:', error.message)
     throw new Error(`Failed to sync certificates: ${error.message}`)
   }
 }

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules
+.pnpm-store
+**/node_modules
+
+# Build outputs
+dist
+.next
+.turbo
+build
+out
+
+# Development files
+.git
+.github
+.vscode
+.idea
+*.log
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+test
+tests
+__tests__
+coverage
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (except README)
+docs
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Misc
+*.swp
+*.swo
+*~
+.cache
+tmp
+temp

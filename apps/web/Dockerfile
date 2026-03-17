@@ -4,15 +4,21 @@ RUN npm install -g pnpm
 FROM base AS builder
 WORKDIR /app
 
+# Copy only dependency files first for better caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 COPY apps/web/package.json ./apps/web/
-RUN pnpm install --frozen-lockfile
 
+# Install dependencies with cache mount
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy source code after dependencies are installed
 COPY packages/shared ./packages/shared
 COPY packages/ui ./packages/ui
 COPY apps/web ./apps/web
+
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @ovpn/web build
 

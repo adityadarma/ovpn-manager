@@ -4,11 +4,17 @@ RUN npm install -g pnpm
 # Builder stage
 FROM base AS builder
 WORKDIR /app
+
+# Copy only dependency files first for better caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json turbo.json* ./
 COPY apps/agent/package.json ./apps/agent/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
 
+# Install dependencies with cache mount
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy source code after dependencies are installed
 COPY apps/agent ./apps/agent
 COPY packages/shared ./packages/shared
 COPY apps/agent/tsup.config.ts ./apps/agent/tsup.config.ts
@@ -17,7 +23,8 @@ COPY apps/agent/tsup.config.ts ./apps/agent/tsup.config.ts
 RUN pnpm --filter @ovpn/agent build
 
 # Isolate app with only its required dependencies for a leaner image
-RUN pnpm deploy --filter @ovpn/agent --prod /prod/agent
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm deploy --filter @ovpn/agent --prod /prod/agent
 
 # Final minimal runner stage
 FROM node:24-alpine AS runner
