@@ -282,7 +282,19 @@ auto_register_node() {
     local json_payload
     if [ -n "$vpn_config" ]; then
         # Merge node info with VPN config
-        json_payload=$(cat <<EOF
+        if [ -z "$region" ]; then
+            json_payload=$(cat <<EOF
+{
+  "hostname": "$hostname",
+  "ip": "$ip_address",
+  "version": "auto-registered",
+  "registrationKey": "$auth_value",
+  "config": $vpn_config
+}
+EOF
+)
+        else
+            json_payload=$(cat <<EOF
 {
   "hostname": "$hostname",
   "ip": "$ip_address",
@@ -293,9 +305,22 @@ auto_register_node() {
 }
 EOF
 )
+        fi
     else
         # No VPN config, use defaults
-        json_payload=$(cat <<EOF
+        if [ -z "$region" ]; then
+            json_payload=$(cat <<EOF
+{
+  "hostname": "$hostname",
+  "ip": "$ip_address",
+  "port": 1194,
+  "version": "auto-registered",
+  "registrationKey": "$auth_value"
+}
+EOF
+)
+        else
+            json_payload=$(cat <<EOF
 {
   "hostname": "$hostname",
   "ip": "$ip_address",
@@ -306,11 +331,14 @@ EOF
 }
 EOF
 )
+        fi
     fi
     
-    # Debug: Show what we're sending (hide sensitive data)
+    # Debug: Show what we're sending
+    echo "[DEBUG] Registration payload:" >&2
+    echo "$json_payload" | jq '.' 2>/dev/null || echo "$json_payload" >&2
     if [ "$auth_method" == "key" ]; then
-        print_info "Sending registration request with key: ${auth_value:0:10}..."
+        echo "[DEBUG] Using registration key: ${auth_value:0:10}..." >&2
     fi
     
     # Make API call
@@ -327,6 +355,10 @@ EOF
     
     http_code=$(echo "$response" | tail -n1)
     body=$(echo "$response" | sed '$d')
+    
+    # Debug: Show response
+    echo "[DEBUG] HTTP Status: $http_code" >&2
+    echo "[DEBUG] Response body: $body" >&2
     
     if [ "$http_code" == "201" ]; then
         # Parse response
