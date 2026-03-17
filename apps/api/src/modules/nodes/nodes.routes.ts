@@ -329,10 +329,20 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Validate certificate format (basic check)
-      if (!ca_cert.includes('BEGIN CERTIFICATE') || !ta_key.includes('BEGIN OpenVPN Static key')) {
+      const isCaCertValid = ca_cert.includes('BEGIN CERTIFICATE') && ca_cert.includes('END CERTIFICATE')
+      const isTlsKeyValid = (ta_key.includes('BEGIN OpenVPN Static key') && ta_key.includes('END OpenVPN Static key'))
+      
+      if (!isCaCertValid) {
         return reply.status(400).send({ 
           error: 'Bad Request', 
-          message: 'Invalid certificate or key format' 
+          message: 'Invalid CA certificate format. Must contain BEGIN/END CERTIFICATE markers.' 
+        })
+      }
+      
+      if (!isTlsKeyValid) {
+        return reply.status(400).send({ 
+          error: 'Bad Request', 
+          message: 'Invalid TLS key format. Must contain BEGIN/END OpenVPN Static key markers.' 
         })
       }
 

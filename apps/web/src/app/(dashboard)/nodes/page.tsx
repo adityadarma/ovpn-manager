@@ -279,7 +279,7 @@ export default function NodesPage() {
                   )}
                   {node.version && (
                     <div className="flex items-center gap-2">
-                      <Server className="h-3.5 w-3.5 text-gray-300" /> v{node.version}
+                      <Server className="h-3.5 w-3.5 text-gray-300" /> {node.version}
                     </div>
                   )}
                   {node.last_seen && (
@@ -309,6 +309,18 @@ export default function NodesPage() {
                     title="Configure"
                   >
                     <Settings className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete node "${node.hostname}"?`)) {
+                        deleteMutation.mutate(node.id)
+                      }
+                    }}
+                    disabled={deleteMutation.isPending}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete Node"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
