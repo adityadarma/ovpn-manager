@@ -1,26 +1,26 @@
 #!/usr/bin/env node
 /**
- * openvpn-connect — Client connect hook
+ * vpn-connect — Client connect hook
  *
- * Called by OpenVPN: client-connect /path/to/this/script
+ * Called by VPN: client-connect /path/to/this/script
  *
- * OpenVPN sets these env vars automatically:
+ * VPN sets these env vars automatically:
  *   $common_name   — username (because username-as-common-name is set)
  *   $ifconfig_pool_remote_ip — VPN IP assigned to the client
  *   $trusted_ip    — real public IP of the client
  *
  * This script POSTs to /api/v1/vpn/connect, receives push_routes back,
- * and writes them to the config file ($1) that OpenVPN reads to push routes.
+ * and writes them to the config file ($1) that VPN reads to push routes.
  *
- * OpenVPN server config:
- *   client-connect /usr/local/bin/openvpn-connect
+ * VPN server config:
+ *   client-connect /usr/local/bin/vpn-connect
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import dotenv from 'dotenv'
 
-const envPath = process.env['OVPN_ENV_PATH'] ?? path.resolve('/etc/openvpn-agent/.env')
+const envPath = process.env['VPN_ENV_PATH'] ?? path.resolve('/etc/vpn-agent/.env')
 dotenv.config({ path: envPath })
 
 const MANAGER_URL = process.env['AGENT_MANAGER_URL']
@@ -28,21 +28,21 @@ const VPN_TOKEN = process.env['VPN_TOKEN']
 const NODE_ID = process.env['AGENT_NODE_ID']
 
 if (!MANAGER_URL || !VPN_TOKEN || !NODE_ID) {
-  console.error('[openvpn-connect] AGENT_MANAGER_URL, VPN_TOKEN and AGENT_NODE_ID must be set')
+  console.error('[vpn-connect] AGENT_MANAGER_URL, VPN_TOKEN and AGENT_NODE_ID must be set')
   process.exit(1)
 }
 
-// The config file to write route-push directives to (provided by OpenVPN as $1)
+// The config file to write route-push directives to (provided by VPN as $1)
 const configFile = process.argv[2] ?? process.env['config']
 
-// OpenVPN env vars
+// VPN env vars
 const username = process.env['common_name'] ?? ''
 const vpnIp = process.env['ifconfig_pool_remote_ip'] ?? ''
 const realIp = process.env['trusted_ip'] ?? ''
 
 async function main() {
   if (!username || !vpnIp) {
-    console.error('[openvpn-connect] Missing common_name or ifconfig_pool_remote_ip env vars')
+    console.error('[vpn-connect] Missing common_name or ifconfig_pool_remote_ip env vars')
     process.exit(1)
   }
 
@@ -64,7 +64,7 @@ async function main() {
 
     if (!res.ok) {
       const err = await res.json() as { error: string }
-      console.error(`[openvpn-connect] ❌ Manager error: ${err.error}`)
+      console.error(`[vpn-connect] ❌ Manager error: ${err.error}`)
       process.exit(1)
     }
 
@@ -74,19 +74,19 @@ async function main() {
       static_ip: string | null
     }
 
-    console.log(`[openvpn-connect] ✅ Session ${data.session_id} opened for ${username} (${vpnIp})`)
-    console.log(`[openvpn-connect] Push routes: ${data.push_routes.join(', ') || 'none'}`)
+    console.log(`[vpn-connect] ✅ Session ${data.session_id} opened for ${username} (${vpnIp})`)
+    console.log(`[vpn-connect] Push routes: ${data.push_routes.join(', ') || 'none'}`)
 
-    // Write "push route" directives to the config file OpenVPN reads
+    // Write "push route" directives to the config file VPN reads
     if (configFile && data.push_routes.length > 0) {
       const lines = data.push_routes.map((cidr) => {
-        // Convert CIDR to "network mask" format for OpenVPN
+        // Convert CIDR to "network mask" format for VPN
         const [ip, prefix] = cidr.split('/')
         const mask = prefixToMask(parseInt(prefix ?? '24'))
         return `push "route ${ip} ${mask}"`
       })
       fs.writeFileSync(configFile, lines.join('\n') + '\n', 'utf8')
-      console.log(`[openvpn-connect] Wrote ${lines.length} route(s) to ${configFile}`)
+      console.log(`[vpn-connect] Wrote ${lines.length} route(s) to ${configFile}`)
     }
 
     // Apply iptables FORWARD rules for the user's allowed networks
@@ -96,7 +96,7 @@ async function main() {
 
     process.exit(0)
   } catch (err) {
-    console.error('[openvpn-connect] ❌ Uncaught error:', (err as Error).message)
+    console.error('[vpn-connect] ❌ Uncaught error:', (err as Error).message)
     process.exit(1)
   }
 }

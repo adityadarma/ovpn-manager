@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Get token from cookie (we'll also set it there on login)
-  const token = request.cookies.get('ovpn_token')?.value
+  const token = request.cookies.get('vpn_token')?.value
 
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
   const isPublic = PUBLIC.some((p) => pathname.startsWith(p))

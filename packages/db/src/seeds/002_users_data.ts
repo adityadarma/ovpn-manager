@@ -12,7 +12,7 @@ export async function seed(knex: Knex): Promise<void> {
     const passwordHash = await bcrypt.hash('Admin@1234!', 12)
     await knex('users').insert({
       username: 'admin',
-      email: 'admin@ovpn.local',
+      email: 'admin@vpn.local',
       password: passwordHash,
       role: 'admin',
       is_active: true,

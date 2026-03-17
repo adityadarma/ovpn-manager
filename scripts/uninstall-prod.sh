@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# OpenVPN Manager - Production Uninstallation Script
+# VPN Manager - Production Uninstallation Script
 # ============================================================
-# This script removes OpenVPN Manager installation
-# Usage: sudo bash /opt/ovpn-manager/scripts/uninstall-prod.sh
+# This script removes VPN Manager installation
+# Usage: sudo bash /opt/vpn-manager/scripts/uninstall-prod.sh
 # ============================================================
 
 set -e
@@ -15,12 +15,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-INSTALL_DIR="/opt/ovpn-manager"
+INSTALL_DIR="/opt/vpn-manager"
 
 print_header() {
     echo -e "${RED}"
     echo "============================================================"
-    echo "  OpenVPN Manager - Uninstallation"
+    echo "  VPN Manager - Uninstallation"
     echo "============================================================"
     echo -e "${NC}"
 }
@@ -79,9 +79,9 @@ remove_volumes() {
     if [ "$delete_data" = "yes" ]; then
         print_info "Removing Docker volumes..."
         
-        docker volume rm ovpn_api_data 2>/dev/null || true
-        docker volume rm ovpn_postgres_data 2>/dev/null || true
-        docker volume rm ovpn_mariadb_data 2>/dev/null || true
+        docker volume rm vpn_api_data 2>/dev/null || true
+        docker volume rm vpn_postgres_data 2>/dev/null || true
+        docker volume rm vpn_mariadb_data 2>/dev/null || true
         
         print_success "Volumes removed"
     else
@@ -96,7 +96,7 @@ remove_images() {
     if [ "$remove_imgs" = "yes" ]; then
         print_info "Removing Docker images..."
         
-        docker rmi $(docker images | grep ovpn-manager | awk '{print $3}') 2>/dev/null || true
+        docker rmi $(docker images | grep vpn-manager | awk '{print $3}') 2>/dev/null || true
         
         print_success "Images removed"
     else
@@ -112,7 +112,7 @@ backup_before_remove() {
         if [ -f "$INSTALL_DIR/backup.sh" ]; then
             print_info "Creating backup..."
             bash "$INSTALL_DIR/backup.sh"
-            print_success "Backup created in /opt/ovpn-backups"
+            print_success "Backup created in /opt/vpn-backups"
         else
             print_warning "Backup script not found"
         fi
@@ -135,15 +135,15 @@ remove_install_dir() {
 remove_cron_jobs() {
     print_info "Checking for cron jobs..."
     
-    if crontab -l 2>/dev/null | grep -q "ovpn"; then
-        print_warning "Found OVPN-related cron jobs"
+    if crontab -l 2>/dev/null | grep -q "vpn"; then
+        print_warning "Found VPN-related cron jobs"
         echo ""
-        crontab -l | grep "ovpn"
+        crontab -l | grep "vpn"
         echo ""
         read -p "Remove these cron jobs? (yes/no): " remove_cron
         
         if [ "$remove_cron" = "yes" ]; then
-            crontab -l | grep -v "ovpn" | crontab -
+            crontab -l | grep -v "vpn" | crontab -
             print_success "Cron jobs removed"
         fi
     else
@@ -176,12 +176,12 @@ print_summary() {
     
     echo ""
     echo -e "${BLUE}Manual cleanup (if needed):${NC}"
-    echo "  - Backups: /opt/ovpn-backups"
-    echo "  - Nginx config: /etc/nginx/sites-available/ovpn"
+    echo "  - Backups: /opt/vpn-backups"
+    echo "  - Nginx config: /etc/nginx/sites-available/vpn"
     echo "  - SSL certificates: /etc/letsencrypt/live/yourdomain.com"
     echo ""
     echo -e "${BLUE}To reinstall:${NC}"
-    echo "  curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash"
+    echo "  curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-prod.sh | sudo bash"
     echo ""
 }
 

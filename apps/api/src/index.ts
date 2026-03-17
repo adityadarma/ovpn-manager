@@ -12,7 +12,7 @@ import { loadEnv } from './config/env'
 async function main() {
   const env = loadEnv()
 
-  console.log('🚀 OVPN API starting...')
+  console.log('🚀 VPN API starting...')
   console.log(`   Port: ${env.PORT}`)
   console.log(`   Host: ${env.HOST}`)
   console.log(`   Environment: ${env.NODE_ENV}`)

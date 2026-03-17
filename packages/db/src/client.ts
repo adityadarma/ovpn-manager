@@ -15,7 +15,7 @@ export interface DbConfig {
 // packages/db/src/client.ts  →  go up 3 levels to reach monorepo root
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const MONOREPO_ROOT = path.resolve(__dirname, '../../..') // packages/db/src → root
-const DEFAULT_SQLITE_PATH = path.join(MONOREPO_ROOT, 'data', 'ovpn.sqlite')
+const DEFAULT_SQLITE_PATH = path.join(MONOREPO_ROOT, 'data', 'vpn.sqlite')
 
 let _db: Knex | null = null
 
@@ -55,7 +55,7 @@ export function createDb(config: DbConfig): Knex {
       seeds: TS_SEEDS,
     }
   } else {
-    // SQLite: always stored at <monorepo-root>/data/ovpn.sqlite unless overridden
+    // SQLite: always stored at <monorepo-root>/data/vpn.sqlite unless overridden
     const sqlitePath = config.sqlitePath ?? DEFAULT_SQLITE_PATH
     fs.mkdirSync(path.dirname(sqlitePath), { recursive: true })
     knexConfig = {

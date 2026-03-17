@@ -1,6 +1,6 @@
 import React from 'react'
 import { StatusBadge } from './status-badge'
-import type { VpnNode } from '@ovpn/shared'
+import type { VpnNode } from '@vpn/shared'
 
 interface NodeCardProps {
   node: VpnNode

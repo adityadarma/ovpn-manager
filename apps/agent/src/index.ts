@@ -13,7 +13,7 @@ import { startHeartbeat } from './core/heartbeat'
 async function main() {
   const env = loadAgentEnv()
 
-  console.log(`🚀 OVPN Agent starting...`)
+  console.log(`🚀 VPN Agent starting...`)
   console.log(`   Manager:  ${env.AGENT_MANAGER_URL}`)
   console.log(`   Node ID:  ${env.AGENT_NODE_ID}`)
   console.log(`   Poll:     every ${env.AGENT_POLL_INTERVAL_MS}ms`)
@@ -23,12 +23,12 @@ async function main() {
   startPoller(env)
 
   process.on('SIGINT', () => {
-    console.log('\n🛑 OVPN Agent shutting down...')
+    console.log('\n🛑 VPN Agent shutting down...')
     process.exit(0)
   })
 
   process.on('SIGTERM', () => {
-    console.log('\n🛑 OVPN Agent shutting down...')
+    console.log('\n🛑 VPN Agent shutting down...')
     process.exit(0)
   })
 }

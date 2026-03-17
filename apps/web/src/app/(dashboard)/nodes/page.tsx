@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Plus, Trash2, MapPin, Clock, Activity, Server, X, Copy, CheckCircle2, Settings, RefreshCw } from 'lucide-react'
-import type { VpnNode } from '@ovpn/shared'
+import type { VpnNode } from '@vpn/shared'
 import { Button } from '@/components/ui/button'
 
 interface NodeForm {
@@ -309,12 +309,6 @@ export default function NodesPage() {
                     title="Configure"
                   >
                     <Settings className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => { if (confirm('Remove node?')) deleteMutation.mutate(node.id) }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

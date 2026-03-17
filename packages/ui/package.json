@@ -1,5 +1,5 @@
 {
-  "name": "@ovpn/ui",
+  "name": "@vpn/ui",
   "version": "1.1.0",
   "type": "module",
   "private": true,
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ovpn/shared": "workspace:*"
+    "@vpn/shared": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0",

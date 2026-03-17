@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
-import { RegisterNodeSchema, HeartbeatSchema } from '@ovpn/shared'
+import { RegisterNodeSchema, HeartbeatSchema } from '@vpn/shared'
 
 interface NodeConfig {
   port: number
@@ -329,7 +329,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Validate certificate format (basic check)
-      if (!ca_cert.includes('BEGIN CERTIFICATE') || !ta_key.includes('BEGIN OpenVPN Static key')) {
+      if (!ca_cert.includes('BEGIN CERTIFICATE') || !ta_key.includes('BEGIN VPN Static key')) {
         return reply.status(400).send({ 
           error: 'Bad Request', 
           message: 'Invalid certificate or key format' 

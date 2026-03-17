@@ -1,6 +1,6 @@
 # Certificate Synchronization Guide
 
-This guide explains how to sync CA certificates and TLS keys from VPN nodes to the OVPN Manager dashboard.
+This guide explains how to sync CA certificates and TLS keys from VPN nodes to the VPN Manager dashboard.
 
 ## Why Sync Certificates?
 
@@ -75,7 +75,7 @@ If you have access to the server files:
 
 Sync certificates when:
 
-- ✅ **New node setup** - After installing OpenVPN server
+- ✅ **New node setup** - After installing VPN server
 - ✅ **Certificate regeneration** - After running `easyrsa` commands
 - ✅ **TLS key rotation** - Security best practice (annually)
 - ✅ **Upgrade tls-auth → tls-crypt** - After migration
@@ -94,7 +94,7 @@ curl https://your-dashboard.com/api/v1/nodes/NODE_ID \
 
 # Should show:
 # "ca_cert": "-----BEGIN CERTIFICATE-----..."
-# "ta_key": "-----BEGIN OpenVPN Static key V1-----..."
+# "ta_key": "-----BEGIN VPN Static key V1-----..."
 ```
 
 ### 2. Test Client Config
@@ -122,10 +122,10 @@ openvpn --config user.ovpn
 ### Error: "CA certificate not found"
 
 ```bash
-# Check if OpenVPN is installed
+# Check if VPN is installed
 ls -la /etc/openvpn/server/
 
-# If missing, install OpenVPN first
+# If missing, install VPN first
 sudo bash scripts/vpn-server.sh install
 ```
 
@@ -151,7 +151,7 @@ sudo systemctl restart openvpn-server@server.service
 The API validates certificate format. Ensure:
 
 - CA cert contains `-----BEGIN CERTIFICATE-----`
-- TLS key contains `-----BEGIN OpenVPN Static key V1-----`
+- TLS key contains `-----BEGIN VPN Static key V1-----`
 - No extra spaces or characters
 - Complete file (not truncated)
 
@@ -181,7 +181,7 @@ curl https://your-dashboard.com/api/v1/nodes \
    ```
 
 3. **Verify client imported new config:**
-   - Delete old config from OpenVPN client
+   - Delete old config from VPN client
    - Import freshly downloaded config
    - Try connecting again
 
@@ -193,13 +193,13 @@ The agent can automatically sync certificates on startup:
 
 ```bash
 # Edit agent config
-sudo nano /etc/systemd/system/ovpn-agent.service
+sudo nano /etc/systemd/system/vpn-agent.service
 
 # Add environment variable
 Environment="AUTO_SYNC_CERTS=true"
 
 # Restart agent
-sudo systemctl restart ovpn-agent
+sudo systemctl restart vpn-agent
 ```
 
 ### Periodic Sync (Cron)
@@ -235,8 +235,8 @@ sudo crontab -e
 
 ```bash
 # Store token securely
-sudo chmod 600 /etc/ovpn-agent/.env
-sudo chown root:root /etc/ovpn-agent/.env
+sudo chmod 600 /etc/vpn-agent/.env
+sudo chown root:root /etc/vpn-agent/.env
 
 # Rotate tokens periodically
 # Dashboard → Nodes → Regenerate Token
@@ -248,10 +248,10 @@ All certificate syncs are logged:
 
 ```bash
 # Check API logs
-docker logs ovpn-manager-api | grep "sync-certs"
+docker logs vpn-manager-api | grep "sync-certs"
 
 # Check agent logs
-sudo journalctl -u ovpn-agent | grep "sync-certs"
+sudo journalctl -u vpn-agent | grep "sync-certs"
 ```
 
 ## Best Practices
@@ -276,7 +276,7 @@ Sync node certificates to dashboard.
 ```json
 {
   "ca_cert": "-----BEGIN CERTIFICATE-----\n...",
-  "ta_key": "-----BEGIN OpenVPN Static key V1-----\n..."
+  "ta_key": "-----BEGIN VPN Static key V1-----\n..."
 }
 ```
 
@@ -299,7 +299,7 @@ Sync node certificates to dashboard.
 ### Example 1: New Node Setup
 
 ```bash
-# 1. Install OpenVPN
+# 1. Install VPN
 sudo bash scripts/vpn-server.sh install
 
 # 2. Install agent

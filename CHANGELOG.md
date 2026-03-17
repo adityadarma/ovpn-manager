@@ -146,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Installation & Deployment
 - **Standalone Agent Installer**: One-line installation script for VPN nodes
   - Auto-installs Docker if not present
-  - Auto-installs OpenVPN server if not present
+  - Auto-installs VPN server if not present
   - Interactive setup for credentials
   - Systemd service for auto-start
   - Management scripts (start, stop, logs, status)
@@ -181,14 +181,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Certificate Endpoints**:
   - `POST /api/v1/users/:id/generate-cert`: Generate client certificate
   - `POST /api/v1/users/bulk-generate-cert`: Bulk certificate generation
-  - `GET /api/v1/users/:id/ovpn`: Download .ovpn file with node-specific settings
+  - `GET /api/v1/users/:id/vpn`: Download .ovpn file with node-specific settings
 
 #### Agent Improvements
 - **New Handlers**:
   - `generate-client-cert`: Generate client certificates using EasyRSA
-  - `update-server-config`: Update OpenVPN server configuration
+  - `update-server-config`: Update VPN server configuration
 - **Certificate Generation**: Support for password-protected keys and custom validity
-- **Configuration Management**: Apply configuration changes to OpenVPN server
+- **Configuration Management**: Apply configuration changes to VPN server
 
 #### UI/UX Improvements
 - **Certificate Management UI**:
@@ -304,6 +304,6 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/adityadarma/ovpn-manager/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/adityadarma/ovpn-manager/discussions)
+- **Issues**: [GitHub Issues](https://github.com/adityadarma/vpn-manager/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/adityadarma/vpn-manager/discussions)
 - **Email**: adhit.boys1@gmail.com

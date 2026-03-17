@@ -1,6 +1,6 @@
-# OpenVPN Manager — Modern VPN Management
+# VPN Manager — Modern VPN Management
 
-![Build Status](https://github.com/adityadarma/ovpn-manager/actions/workflows/docker-publish.yml/badge.svg)
+![Build Status](https://github.com/adityadarma/vpn-manager/actions/workflows/docker-publish.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)
 
@@ -9,7 +9,7 @@ A centralized, open-source VPN management inspired by enterprise solutions (like
 ## Key Features
 
 - **Multi-Database Support:** Run securely on SQLite (default/development), PostgreSQL, or MySQL/MariaDB.
-- **Node Clustering:** Deploy multiple OpenVPN server agents globally. The central manager orchestrates them all.
+- **Node Clustering:** Deploy multiple VPN server agents globally. The central manager orchestrates them all.
 - **Role-Based Access Control (RBAC):** Admin and User roles.
 - **Network Policies:** Define which VPN users can access which internal IP segments via CIDR-based Allow/Deny routing rules.
 - **Active Session Tracking:** Real-time visibility into who is connected, their virtual IPs, data transferred, and session history via the agent's heartbeat.
@@ -31,7 +31,7 @@ A centralized, open-source VPN management inspired by enterprise solutions (like
 
 ```text
 ┌─────────────────────────────────────────┐
-│           OVPN Manager (Core)           │
+│           VPN Manager (Core)           │
 │  ┌──────────┐  ┌──────────────────────┐ │
 │  │  Web UI  │  │    API (Fastify)     │ │
 │  │ Next.js  │◄─│  TypeScript + Knex   │ │
@@ -52,7 +52,7 @@ A centralized, open-source VPN management inspired by enterprise solutions (like
               │  └────────┬───────┘ │
               │           │         │
               │  ┌────────▼───────┐ │
-              │  │   OpenVPN      │ │
+              │  │   VPN      │ │
               │  └────────────────┘ │
               └─────────────────────┘
 ```
@@ -60,7 +60,7 @@ A centralized, open-source VPN management inspired by enterprise solutions (like
 ## Monorepo Structure
 
 ```text
-ovpn-manager/
+vpn-manager/
 ├── apps/
 │   ├── api/        ← Fastify REST API (port 3001)
 │   ├── web/        ← Next.js + ShadCN Dashboard (port 3000)
@@ -86,8 +86,8 @@ ovpn-manager/
 
 Clone the repository and install all monorepo dependencies:
 ```bash
-git clone https://github.com/adityadarma/ovpn-manager.git
-cd ovpn-manager
+git clone https://github.com/adityadarma/vpn-manager.git
+cd vpn-manager
 pnpm install
 ```
 
@@ -97,7 +97,7 @@ Copy the example environment variables:
 ```bash
 cp .env.example .env
 ```
-By default, the system will use **SQLite** (a local file stored in `data/ovpn.sqlite`) making it incredibly easy to start.
+By default, the system will use **SQLite** (a local file stored in `data/vpn.sqlite`) making it incredibly easy to start.
 
 ### 3. Database Setup
 
@@ -138,7 +138,7 @@ Networks define the internal subnets your VPN will route traffic to.
 4. Click **Add Network**.
 
 ### Step 3: Register a VPN Node (Agent)
-A Node is the actual server running OpenVPN.
+A Node is the actual server running VPN.
 1. Navigate to **Nodes** in the sidebar.
 2. Click **Add Node**. Fill in the host details (e.g., `us-east-vpn.company.com`, IP: `198.51.100.2`).
 3. After creation, the system will generate an **Agent Token**. *Save this secret token!* You will use it to configure the Agent application on your actual VPN server.
@@ -151,26 +151,26 @@ A Node is the actual server running OpenVPN.
 Policies define Access Control Lists (ACL).
 1. Navigate to **Policies**.
 2. Create an **Allow** rule for a specific user (or group) tying them to the Network CIDR you created in Step 2.
-3. When the user connects via OpenVPN, the agent automatically pushes these explicit IP routing rules to their client.
+3. When the user connects via VPN, the agent automatically pushes these explicit IP routing rules to their client.
 
 ---
 
 ## 💻 VPN Server Installation (Node Agent)
 
-The "Agent" acts as the middleman between your central Manager API and the local OpenVPN daemon holding the client connections. We provide automated installation scripts for different deployment scenarios.
+The "Agent" acts as the middleman between your central Manager API and the local VPN daemon holding the client connections. We provide automated installation scripts for different deployment scenarios.
 
 ### Option 1: Standalone Agent (Docker) - Recommended ⭐
 
 This is the easiest way to deploy an agent on a VPN node. It will:
 - Install Docker (if not present)
-- Install OpenVPN server (if not present)
+- Install VPN server (if not present)
 - Auto-register node (optional) or use manual registration
 - Configure and start the agent in a Docker container
 - Set up systemd service for auto-start
 
 ```bash
 # One-line install
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 ```
 
 **Registration Options:**
@@ -196,20 +196,20 @@ During installation, choose one of these methods:
 **Management Commands:**
 ```bash
 # Start agent
-systemctl start ovpn-agent
+systemctl start vpn-agent
 # or
-/opt/ovpn-agent/start.sh
+/opt/vpn-agent/start.sh
 
 # Stop agent
-systemctl stop ovpn-agent
+systemctl stop vpn-agent
 # or
-/opt/ovpn-agent/stop.sh
+/opt/vpn-agent/stop.sh
 
 # View logs
-/opt/ovpn-agent/logs.sh
+/opt/vpn-agent/logs.sh
 
 # Check status
-/opt/ovpn-agent/status.sh
+/opt/vpn-agent/status.sh
 ```
 
 ### Option 2: Manual Docker Deployment
@@ -217,16 +217,16 @@ systemctl stop ovpn-agent
 If you prefer manual control:
 
 ```bash
-# 1. Install OpenVPN server
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
+# 1. Install VPN server
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
 
 # 2. Download agent compose file
-mkdir -p /opt/ovpn-agent
-cd /opt/ovpn-agent
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.agent.yml -O docker-compose.yml
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.agent -O .env
+mkdir -p /opt/vpn-agent
+cd /opt/vpn-agent
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/docker-compose.agent.yml -O docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/.env.agent -O .env
 
 # 3. Configure .env with your credentials
 nano .env
@@ -242,16 +242,16 @@ For development or custom deployments:
 1. SSH into your VPN Server as root
 2. Clone and build:
    ```bash
-   git clone https://github.com/adityadarma/ovpn-manager.git
-   cd ovpn-manager
+   git clone https://github.com/adityadarma/vpn-manager.git
+   cd vpn-manager
    
-   # Install OpenVPN
+   # Install VPN
    chmod +x scripts/vpn-server.sh
    sudo ./scripts/vpn-server.sh install
    
    # Build agent
    pnpm install
-   pnpm --filter @ovpn/agent build
+   pnpm --filter @vpn/agent build
    ```
 
 3. Configure environment:
@@ -272,14 +272,14 @@ For development or custom deployments:
 
 **Standalone Agent:**
 ```bash
-systemctl stop ovpn-agent
-systemctl disable ovpn-agent
-rm -rf /opt/ovpn-agent
-rm -f /etc/systemd/system/ovpn-agent.service
+systemctl stop vpn-agent
+systemctl disable vpn-agent
+rm -rf /opt/vpn-agent
+rm -f /etc/systemd/system/vpn-agent.service
 systemctl daemon-reload
 ```
 
-**OpenVPN Server:**
+**VPN Server:**
 ```bash
 sudo ./vpn-server.sh uninstall
 ```
@@ -298,8 +298,8 @@ docker compose -f docker-compose.dev.yml up
 **Option 1: With Repository (Local Build)**
 ```bash
 # Clone and build
-git clone https://github.com/adityadarma/ovpn-manager.git
-cd ovpn-manager
+git clone https://github.com/adityadarma/vpn-manager.git
+cd vpn-manager
 cp .env.example .env
 nano .env  # Configure
 
@@ -311,11 +311,11 @@ docker compose up -d
 **Option 2: Without Repository (Pre-built Images)** ⭐ Recommended
 ```bash
 # One-line install
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-prod.sh | sudo bash
 
 # Or manual
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.yml
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.production -O .env
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/.env.production -O .env
 nano .env  # Configure JWT_SECRET, etc.
 
 # Pull and start

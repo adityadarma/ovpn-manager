@@ -1,6 +1,6 @@
 # Docker Deployment Guide
 
-This guide explains how to run OpenVPN Manager using Docker Compose for both development and production environments.
+This guide explains how to run VPN Manager using Docker Compose for both development and production environments.
 
 ## 📋 Table of Contents
 
@@ -94,7 +94,7 @@ JWT_SECRET=dev-secret-please-change-in-production-32chars
 | **Restart Policy** | ❌ No auto-restart | ✅ unless-stopped |
 | **Logging** | Verbose | Limited (10MB, 3 files) |
 | **Container Names** | `*-dev` suffix | Production names |
-| **Network** | `ovpn-dev-network` | `ovpn-network` |
+| **Network** | `vpn-dev-network` | `vpn-network` |
 | **Volumes** | `*_dev_data` | Production volumes |
 | **Performance** | Slower (dev mode) | Optimized |
 
@@ -120,9 +120,9 @@ JWT_SECRET=dev-secret-please-change-in-production-32chars
    docker compose build
    
    # Or build individually
-   docker build -t ovpn-manager:api -f apps/api/Dockerfile .
-   docker build -t ovpn-manager:web -f apps/web/Dockerfile .
-   docker build -t ovpn-manager:agent -f apps/agent/Dockerfile .
+   docker build -t vpn-manager:api -f apps/api/Dockerfile .
+   docker build -t vpn-manager:web -f apps/web/Dockerfile .
+   docker build -t vpn-manager:agent -f apps/agent/Dockerfile .
    ```
 
 2. **Configure environment variables:**
@@ -221,10 +221,10 @@ docker compose --profile postgres up -d
 **Configuration (.env):**
 ```env
 DATABASE_TYPE=postgres
-DATABASE_URL=postgresql://ovpn:YOUR_PASSWORD@postgres:5432/ovpn
-POSTGRES_USER=ovpn
+DATABASE_URL=postgresql://vpn:YOUR_PASSWORD@postgres:5432/vpn
+POSTGRES_USER=vpn
 POSTGRES_PASSWORD=YOUR_SECURE_PASSWORD
-POSTGRES_DB=ovpn
+POSTGRES_DB=vpn
 ```
 
 **Pros:**
@@ -250,10 +250,10 @@ docker compose --profile mysql up -d
 **Configuration (.env):**
 ```env
 DATABASE_TYPE=mysql
-DATABASE_URL=mysql://ovpn:YOUR_PASSWORD@mariadb:3306/ovpn
-MYSQL_USER=ovpn
+DATABASE_URL=mysql://vpn:YOUR_PASSWORD@mariadb:3306/vpn
+MYSQL_USER=vpn
 MYSQL_PASSWORD=YOUR_SECURE_PASSWORD
-MYSQL_DATABASE=ovpn
+MYSQL_DATABASE=vpn
 MYSQL_ROOT_PASSWORD=YOUR_ROOT_PASSWORD
 ```
 
@@ -268,12 +268,12 @@ The VPN Agent runs on your VPN server node and communicates with the Manager API
 Use our automated installer that handles everything:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 ```
 
 This will:
 1. Install Docker (if not present)
-2. Install OpenVPN server (if not present)
+2. Install VPN server (if not present)
 3. **Auto-register node** (optional) or use manual registration
 4. Configure and start the agent
 5. Set up systemd service for auto-start
@@ -303,35 +303,35 @@ During installation, you can choose to auto-register the node:
 **Management Commands:**
 ```bash
 # Start agent
-systemctl start ovpn-agent
+systemctl start vpn-agent
 # or
-/opt/ovpn-agent/start.sh
+/opt/vpn-agent/start.sh
 
 # Stop agent
-systemctl stop ovpn-agent
+systemctl stop vpn-agent
 # or
-/opt/ovpn-agent/stop.sh
+/opt/vpn-agent/stop.sh
 
 # View logs
-/opt/ovpn-agent/logs.sh
+/opt/vpn-agent/logs.sh
 
 # Check status
-/opt/ovpn-agent/status.sh
+/opt/vpn-agent/status.sh
 ```
 
 ---
 
 ### Manual Installation
 
-#### Step 1: Install OpenVPN Server
+#### Step 1: Install VPN Server
 
-First, install OpenVPN on your VPN server using our automated script:
+First, install VPN on your VPN server using our automated script:
 
 **Option A: One-Line Install**
 
 ```bash
 # Download and run the VPN server installer
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
 ```
@@ -346,8 +346,8 @@ During installation, you'll be prompted to configure:
 
 ```bash
 # Clone repository
-git clone https://github.com/adityadarma/ovpn-manager.git
-cd ovpn-manager
+git clone https://github.com/adityadarma/vpn-manager.git
+cd vpn-manager
 
 # Run installer
 chmod +x scripts/vpn-server.sh
@@ -355,7 +355,7 @@ sudo ./scripts/vpn-server.sh install
 ```
 
 The script will:
-- ✅ Install OpenVPN and dependencies
+- ✅ Install VPN and dependencies
 - ✅ Generate PKI certificates (CA, server cert, DH params, TLS-Crypt key)
 - ✅ Configure server settings (customizable)
 - ✅ Set up NAT and IP forwarding
@@ -441,7 +441,7 @@ docker compose ps
 curl http://localhost:3001/api/v1/health
 
 # Check container health
-docker inspect ovpn-api | grep -A 10 Health
+docker inspect vpn-api | grep -A 10 Health
 ```
 
 ### Resource Usage
@@ -522,26 +522,26 @@ Customize VPN settings per node via Web UI:
 
 ```bash
 # Backup SQLite database
-docker run --rm -v ovpn_api_data:/data -v $(pwd):/backup alpine tar czf /backup/ovpn-backup.tar.gz /data
+docker run --rm -v vpn_api_data:/data -v $(pwd):/backup alpine tar czf /backup/vpn-backup.tar.gz /data
 
 # Backup PostgreSQL
-docker compose exec postgres pg_dump -U ovpn ovpn > backup.sql
+docker compose exec postgres pg_dump -U vpn vpn > backup.sql
 
 # Backup MySQL
-docker compose exec mariadb mysqldump -u ovpn -p ovpn > backup.sql
+docker compose exec mariadb mysqldump -u vpn -p vpn > backup.sql
 ```
 
 ### Restore Volumes
 
 ```bash
 # Restore SQLite
-docker run --rm -v ovpn_api_data:/data -v $(pwd):/backup alpine tar xzf /backup/ovpn-backup.tar.gz -C /
+docker run --rm -v vpn_api_data:/data -v $(pwd):/backup alpine tar xzf /backup/vpn-backup.tar.gz -C /
 
 # Restore PostgreSQL
-docker compose exec -T postgres psql -U ovpn ovpn < backup.sql
+docker compose exec -T postgres psql -U vpn vpn < backup.sql
 
 # Restore MySQL
-docker compose exec -T mariadb mysql -u ovpn -p ovpn < backup.sql
+docker compose exec -T mariadb mysql -u vpn -p vpn < backup.sql
 ```
 
 ---

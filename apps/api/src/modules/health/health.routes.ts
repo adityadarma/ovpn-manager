@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
-import { APP_VERSION } from '@ovpn/shared'
+import { APP_VERSION } from '@vpn/shared'
 
 const healthRoutes: FastifyPluginAsync = async (app) => {
   app.get(

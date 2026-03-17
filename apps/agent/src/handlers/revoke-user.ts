@@ -26,7 +26,7 @@ export async function handleRevokeUser(
   // Copy CRL to server directory
   await execAsync(`cp ${EASYRSA_DIR}/pki/crl.pem /etc/openvpn/server/crl.pem || true`)
 
-  // Reload OpenVPN to pick up the new CRL
+  // Reload VPN to pick up the new CRL
   await execAsync('systemctl reload openvpn-server@server || systemctl reload openvpn@server || true')
 
   console.log(`[revoke-user] Certificate revoked for: ${username}`)

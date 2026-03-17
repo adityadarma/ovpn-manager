@@ -1,5 +1,5 @@
 import type { AgentEnv } from '../config/env'
-import type { TaskAction } from '@ovpn/shared'
+import type { TaskAction } from '@vpn/shared'
 import { handleCreateUser } from '../handlers/create-user'
 import { handleRevokeUser } from '../handlers/revoke-user'
 import { handleReloadOpenvpn } from '../handlers/reload-openvpn'

@@ -5,12 +5,12 @@ echo "=========================================="
 echo "    Running Database Migrations...        "
 echo "=========================================="
 cd /app
-tsx node_modules/@ovpn/db/src/migrate.ts
+tsx node_modules/@vpn/db/src/migrate.ts
 
 echo "=========================================="
 echo "    Running Database Seeders...           "
 echo "=========================================="
-tsx node_modules/@ovpn/db/src/seed.ts
+tsx node_modules/@vpn/db/src/seed.ts
 
 echo "=========================================="
 echo "    Starting API Backend...               "

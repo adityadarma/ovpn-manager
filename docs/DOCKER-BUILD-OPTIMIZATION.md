@@ -115,7 +115,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
       cache_from:
-        - ghcr.io/youruser/ovpn-manager:api
+        - ghcr.io/youruser/vpn-manager:api
 ```
 
 ### Build with Cache
@@ -125,7 +125,7 @@ services:
 docker build \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   -f apps/api/Dockerfile \
-  -t ovpn-manager-api:latest \
+  -t vpn-manager:latest \
   .
 
 # Build with docker-compose

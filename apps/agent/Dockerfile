@@ -20,11 +20,11 @@ COPY packages/shared ./packages/shared
 COPY apps/agent/tsup.config.ts ./apps/agent/tsup.config.ts
 
 # Build the bundled Javascript code via tsup
-RUN pnpm --filter @ovpn/agent build
+RUN pnpm --filter @vpn/agent build
 
 # Isolate app with only its required dependencies for a leaner image
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm deploy --filter @ovpn/agent --prod /prod/agent
+    pnpm deploy --filter @vpn/agent --prod /prod/agent
 
 # Final minimal runner stage
 FROM node:24-alpine AS runner

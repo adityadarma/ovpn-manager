@@ -53,7 +53,7 @@ export default function LoginPage() {
       login(data.token!, data.user!)
       
       // Set cookie for middleware
-      document.cookie = `ovpn_token=${data.token}; path=/; max-age=604800; samesite=lax`
+      document.cookie = `vpn_token=${data.token}; path=/; max-age=604800; samesite=lax`
       
       toast.success('Successfully logged in')
       router.push('/dashboard')
@@ -78,7 +78,7 @@ export default function LoginPage() {
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to OpenVPN Manager
+              Sign in to VPN Manager
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -126,7 +126,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          OpenVPN Manager v1.0.0
+          VPN Manager v1.0.0
         </p>
       </div>
     </div>

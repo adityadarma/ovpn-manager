@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
-import { CreateUserSchema, UpdateUserSchema } from '@ovpn/shared'
+import { CreateUserSchema, UpdateUserSchema } from '@vpn/shared'
 
 const userRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/v1/users
@@ -364,9 +364,9 @@ const userRoutes: FastifyPluginAsync = async (app) => {
     }
   )
 
-  // GET /api/v1/users/:id/ovpn
+  // GET /api/v1/users/:id/vpn
   app.get<{ Params: { id: string }; Querystring: { nodeId?: string } }>(
-    '/users/:id/ovpn',
+    '/users/:id/vpn',
     { onRequest: [app.authenticate], schema: { tags: ['users'], summary: 'Download .ovpn config', security: [{ bearerAuth: [] }] } },
     async (request, reply) => {
       const { id } = request.params

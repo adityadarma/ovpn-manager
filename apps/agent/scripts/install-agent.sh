@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# install-agent.sh — Install OVPN Agent on an OpenVPN server
+# install-agent.sh — Install VPN Agent on an VPN server
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage:
 #   curl -sSL https://your-server/install-agent.sh | sudo bash
@@ -11,12 +11,12 @@
 
 set -euo pipefail
 
-AGENT_DIR="/opt/ovpn-agent"
-AGENT_ENV="/etc/openvpn-agent/.env"
+AGENT_DIR="/opt/vpn-agent"
+AGENT_ENV="/etc/vpn-agent/.env"
 BIN_DIR="/usr/local/bin"
-SERVICE_FILE="/etc/systemd/system/ovpn-agent.service"
+SERVICE_FILE="/etc/systemd/system/vpn-agent.service"
 
-echo "🚀 Installing OVPN Agent..."
+echo "🚀 Installing VPN Agent..."
 
 # ── 1. Create directories ────────────────────────────────────────────────────
 mkdir -p "$(dirname "${AGENT_ENV}")"
@@ -37,11 +37,11 @@ fi
 chmod 600 "${AGENT_ENV}"
 
 # ── 4. Symlink CLI scripts to /usr/local/bin ─────────────────────────────────
-for script in openvpn-login openvpn-connect openvpn-disconnect; do
+for script in vpn-login vpn-connect vpn-disconnect; do
   TARGET="${BIN_DIR}/${script}"
   cat > "${TARGET}" << EOF
 #!/usr/bin/env bash
-OVPN_ENV_PATH="${AGENT_ENV}" exec node "${AGENT_DIR}/dist/bin/${script}.js" "\$@"
+VPN_ENV_PATH="${AGENT_ENV}" exec node "${AGENT_DIR}/dist/bin/${script}.js" "\$@"
 EOF
   chmod +x "${TARGET}"
   echo "✓ Installed ${TARGET}"
@@ -50,7 +50,7 @@ done
 # ── 5. Create systemd service for the polling agent daemon ───────────────────
 cat > "${SERVICE_FILE}" << EOF
 [Unit]
-Description=OVPN Agent — VPN Management Daemon
+Description=VPN Agent — VPN Management Daemon
 After=network.target
 
 [Service]
@@ -63,7 +63,7 @@ Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=ovpn-agent
+SyslogIdentifier=vpn-agent
 
 [Install]
 WantedBy=multi-user.target
@@ -72,7 +72,7 @@ EOF
 systemctl daemon-reload
 echo "✓ Systemd service created at ${SERVICE_FILE}"
 
-# ── 6. Print OpenVPN server.conf instructions ────────────────────────────────
+# ── 6. Print VPN server.conf instructions ────────────────────────────────
 echo ""
 echo "═══════════════════════════════════════════════════════"
 echo "  ✅ Installation complete!"
@@ -84,16 +84,16 @@ echo "     AGENT_MANAGER_URL, AGENT_NODE_ID, AGENT_SECRET_TOKEN, VPN_TOKEN"
 echo ""
 echo "  2. Add to /etc/openvpn/server.conf:"
 echo ""
-echo "     # Authentication via OVPN Manager"
+echo "     # Authentication via VPN Manager"
 echo "     username-as-common-name"
-echo "     auth-user-pass-verify ${BIN_DIR}/openvpn-login via-file"
-echo "     client-connect ${BIN_DIR}/openvpn-connect"
-echo "     client-disconnect ${BIN_DIR}/openvpn-disconnect"
+echo "     auth-user-pass-verify ${BIN_DIR}/vpn-login via-file"
+echo "     client-connect ${BIN_DIR}/vpn-connect"
+echo "     client-disconnect ${BIN_DIR}/vpn-disconnect"
 echo "     script-security 2"
 echo ""
 echo "  3. Enable and start the agent daemon:"
-echo "     systemctl enable --now ovpn-agent.service"
+echo "     systemctl enable --now vpn-agent.service"
 echo ""
-echo "  4. Restart OpenVPN:"
+echo "  4. Restart VPN:"
 echo "     systemctl restart openvpn@server"
 echo "═══════════════════════════════════════════════════════"

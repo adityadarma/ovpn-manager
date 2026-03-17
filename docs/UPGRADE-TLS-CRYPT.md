@@ -34,12 +34,12 @@ New installations automatically use `tls-crypt`. No action needed.
 
 2. **Uninstall old OpenVPN**:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/yourusername/ovpn-manager/main/scripts/vpn-server.sh | sudo bash -s uninstall
+   curl -fsSL https://raw.githubusercontent.com/yourusername/vpn-manager/main/scripts/vpn-server.sh | sudo bash -s uninstall
    ```
 
 3. **Install with new script**:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/yourusername/ovpn-manager/main/scripts/vpn-server.sh | sudo bash -s install
+   curl -fsSL https://raw.githubusercontent.com/yourusername/vpn-manager/main/scripts/vpn-server.sh | sudo bash -s install
    ```
 
 4. **Update node certificates in dashboard**:
@@ -155,5 +155,5 @@ If you need to rollback:
 ## Support
 
 For issues or questions:
-- GitHub Issues: https://github.com/yourusername/ovpn-manager/issues
-- Documentation: https://github.com/yourusername/ovpn-manager/docs
+- GitHub Issues: https://github.com/yourusername/vpn-manager/issues
+- Documentation: https://github.com/yourusername/vpn-manager/docs

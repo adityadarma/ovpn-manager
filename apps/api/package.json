@@ -1,5 +1,5 @@
 {
-  "name": "@ovpn/api",
+  "name": "@vpn/api",
   "version": "1.1.0",
   "type": "module",
   "private": true,
@@ -17,8 +17,8 @@
     "@fastify/rate-limit": "^10.2.2",
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
-    "@ovpn/db": "workspace:*",
-    "@ovpn/shared": "workspace:*",
+    "@vpn/db": "workspace:*",
+    "@vpn/shared": "workspace:*",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",

@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Users, Server, Activity, Clock, TrendingUp } from 'lucide-react'
-import type { User, VpnNode, VpnSession, Task } from '@ovpn/shared'
+import type { User, VpnNode, VpnSession, Task } from '@vpn/shared'
 
 export default function DashboardPage() {
   const { data: users = [] } = useQuery<User[]>({ queryKey: ['users'], queryFn: () => api.get('/api/v1/users') })
@@ -25,7 +25,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1 text-sm">Overview of your OpenVPN infrastructure</p>
+        <p className="text-gray-500 mt-1 text-sm">Overview of your VPN infrastructure</p>
       </div>
 
       {/* Stat Cards */}

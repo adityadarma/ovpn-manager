@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: () => !!get().token,
     }),
     {
-      name: 'ovpn-auth',
+      name: 'vpn-auth',
     },
   ),
 )

@@ -20,7 +20,7 @@ COPY packages/ui ./packages/ui
 COPY apps/web ./apps/web
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm --filter @ovpn/web build
+RUN pnpm --filter @vpn/web build
 
 # Production runner
 FROM node:24-alpine AS runner

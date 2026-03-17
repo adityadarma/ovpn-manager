@@ -7,7 +7,7 @@ export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
   target: 'node24',
-  noExternal: ['@ovpn/shared', '@ovpn/db'],
+  noExternal: ['@vpn/shared', '@vpn/db'],
   clean: true,
   outExtension() {
     return {

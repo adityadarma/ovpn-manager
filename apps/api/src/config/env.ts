@@ -9,7 +9,7 @@ const EnvSchema = z.object({
   WEB_URL: z.string().optional(),
   DATABASE_TYPE: z.enum(['postgres', 'mysql', 'sqlite']).default('sqlite'),
   DATABASE_URL: z.string().optional(),
-  // SQLite path is resolved in @ovpn/db via import.meta.url — no config needed here
+  // SQLite path is resolved in @vpn/db via import.meta.url — no config needed here
   // Optional override: set DATABASE_SQLITE_PATH env var and it will be forwarded
   DATABASE_SQLITE_PATH: z.string().optional(),
 })

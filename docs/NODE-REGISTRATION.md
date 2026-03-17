@@ -1,6 +1,6 @@
 # Node Registration Guide
 
-This guide explains how to register VPN nodes with the OpenVPN Manager.
+This guide explains how to register VPN nodes with the VPN Manager.
 
 ## Table of Contents
 
@@ -55,7 +55,7 @@ The most secure method for production environments.
 **Usage:**
 ```bash
 # During agent installation
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 
 # Choose: Auto-register → Registration Key
 # Enter the NODE_REGISTRATION_KEY value
@@ -95,7 +95,7 @@ Use admin credentials to register nodes.
 **Usage:**
 ```bash
 # During agent installation
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 
 # Choose: Auto-register → Admin JWT Token
 # Paste the token from browser
@@ -123,7 +123,7 @@ Traditional method where admin registers node first.
 **Usage:**
 ```bash
 # During agent installation
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 
 # Choose: Manual registration
 # Enter Node ID and Secret Token
@@ -152,7 +152,7 @@ docker compose restart
 
 ```bash
 # Run installer
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 ```
 
 Follow the prompts:
@@ -176,7 +176,7 @@ Enter Registration Key: [paste your key]
 **On VPN Node:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 ```
 
 Follow the prompts:

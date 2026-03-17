@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import { createDb } from '@ovpn/db'
+import { createDb } from '@vpn/db'
 import type { Env } from './config/env'
 import { NodeStatusChecker } from './services/node-status-checker'
 import { startCertRenewalScheduler } from './services/cert-renewal'

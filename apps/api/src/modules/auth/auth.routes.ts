@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import bcrypt from 'bcryptjs'
-import { LoginSchema } from '@ovpn/shared'
+import { LoginSchema } from '@vpn/shared'
 
 const authRoutes: FastifyPluginAsync = async (app) => {
   // POST /api/v1/auth/login

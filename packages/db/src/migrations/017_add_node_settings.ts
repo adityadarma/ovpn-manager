@@ -3,7 +3,7 @@ import type { Knex } from 'knex'
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.alterTable('vpn_nodes', (table) => {
     // Protocol settings
-    table.string('protocol', 10).defaultTo('udp').comment('OpenVPN protocol (udp/tcp)')
+    table.string('protocol', 10).defaultTo('udp').comment('VPN protocol (udp/tcp)')
     table.string('tunnel_mode', 10).defaultTo('full').comment('Tunnel mode (full/split)')
     
     // Network settings

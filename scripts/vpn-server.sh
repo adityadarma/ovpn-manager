@@ -3,7 +3,7 @@
 set -e
 
 # ==========================================
-# OpenVPN Manager - VPN Node Auto Installer
+# VPN Manager - VPN Node Auto Installer
 # ==========================================
 
 # Make sure only root can run our script
@@ -29,7 +29,7 @@ TUNNEL_MODE="full"  # full or split
 # Interactive configuration for install
 if [ "$ACTION" == "install" ]; then
     echo "================================="
-    echo "OpenVPN Server Configuration"
+    echo "VPN Server Configuration"
     echo "================================="
     echo ""
     
@@ -299,7 +299,7 @@ EOF
     echo ""
     echo "To connect this node to OpenVPN Manager:"
     echo "1. Register this node in the Web UI (Nodes → Add Node)"
-    echo "2. Install the agent: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash"
+    echo "2. Install the agent: curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash"
     echo ""
     echo "Certificates generated. The CA and TLS-Crypt paths are:"
     echo " - CA Cert: /etc/openvpn/server/ca.crt"

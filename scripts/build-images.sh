@@ -4,20 +4,20 @@
 set -e
 
 echo "=========================================="
-echo "    Building OpenVPN Manager Docker Images  "
+echo "    Building VPN Manager Docker Images  "
 echo "=========================================="
 
 # Build Manager API
-echo "→ Building API Image (ovpn-manager:api)..."
-docker build -t ovpn-manager:api -f apps/api/Dockerfile .
+echo "→ Building API Image (vpn-manager:api)..."
+docker build -t vpn-manager:api -f apps/api/Dockerfile .
 
 # Build Web Dashboard
-echo "→ Building Web Image (ovpn-manager:web)..."
-docker build -t ovpn-manager:web -f apps/web/Dockerfile .
+echo "→ Building Web Image (vpn-manager:web)..."
+docker build -t vpn-manager:web -f apps/web/Dockerfile .
 
 # Build Node Agent
-echo "→ Building Agent Image (ovpn-manager:agent)..."
-docker build -t ovpn-manager:agent -f apps/agent/Dockerfile .
+echo "→ Building Agent Image (vpn-manager:agent)..."
+docker build -t vpn-manager:agent -f apps/agent/Dockerfile .
 
 echo "=========================================="
 echo "✅ All images built successfully!"

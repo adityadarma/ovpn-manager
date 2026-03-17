@@ -1,6 +1,6 @@
 # Production Installation Guide (No Repository Clone)
 
-This guide shows you how to deploy OVPN Manager in production without cloning the repository. All you need is Docker and a few configuration files.
+This guide shows you how to deploy VPN Manager in production without cloning the repository. All you need is Docker and a few configuration files.
 
 ## 📋 Prerequisites
 
@@ -17,7 +17,7 @@ This guide shows you how to deploy OVPN Manager in production without cloning th
 ### Method 1: One-Line Install Script
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-prod.sh | sudo bash
 ```
 
 This script will:
@@ -34,23 +34,23 @@ Follow the steps below for full control over the installation process.
 
 ## 📥 Step 1: Download Configuration Files
 
-Create a directory for OVPN Manager:
+Create a directory for VPN Manager:
 
 ```bash
-mkdir -p /opt/ovpn-manager
-cd /opt/ovpn-manager
+mkdir -p /opt/vpn-manager
+cd /opt/vpn-manager
 ```
 
 Download the production compose file:
 
 ```bash
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/docker-compose.yml
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/docker-compose.yml
 ```
 
 Download the environment template:
 
 ```bash
-wget https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/.env.production -O .env
+wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/.env.production -O .env
 ```
 
 ---
@@ -107,19 +107,19 @@ DATABASE_TYPE=sqlite
 For PostgreSQL (recommended for production):
 ```env
 DATABASE_TYPE=postgres
-DATABASE_URL=postgresql://ovpn:YOUR_PASSWORD@postgres:5432/ovpn
-POSTGRES_USER=ovpn
+DATABASE_URL=postgresql://vpn:YOUR_PASSWORD@postgres:5432/vpn
+POSTGRES_USER=vpn
 POSTGRES_PASSWORD=YOUR_SECURE_PASSWORD
-POSTGRES_DB=ovpn
+POSTGRES_DB=vpn
 ```
 
 For MySQL/MariaDB:
 ```env
 DATABASE_TYPE=mysql
-DATABASE_URL=mysql://ovpn:YOUR_PASSWORD@mariadb:3306/ovpn
-MYSQL_USER=ovpn
+DATABASE_URL=mysql://vpn:YOUR_PASSWORD@mariadb:3306/vpn
+MYSQL_USER=vpn
 MYSQL_PASSWORD=YOUR_SECURE_PASSWORD
-MYSQL_DATABASE=ovpn
+MYSQL_DATABASE=vpn
 MYSQL_ROOT_PASSWORD=YOUR_ROOT_PASSWORD
 ```
 
@@ -167,8 +167,8 @@ docker compose ps
 Expected output:
 ```
 NAME            IMAGE                                    STATUS
-ovpn-api        ghcr.io/adityadarma/ovpn-manager:api    Up (healthy)
-ovpn-web        ghcr.io/adityadarma/ovpn-manager:web    Up
+vpn-api        ghcr.io/adityadarma/vpn-manager:api    Up (healthy)
+vpn-web        ghcr.io/adityadarma/vpn-manager:web    Up
 ```
 
 Check logs:
@@ -227,7 +227,7 @@ The agent installer can automatically register the node with the Manager API.
 **Installation:**
 ```bash
 # On the VPN server, run the installer
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 ```
 
 During installation:
@@ -254,7 +254,7 @@ During installation:
 **Manual Agent Installation:**
 ```bash
 # On the VPN server
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 
 # Choose "Manual registration" and provide Node ID and Secret Token
 ```
@@ -300,10 +300,10 @@ After generating a certificate:
 
 1. Click **Download .ovpn** button for the user
 2. Send the `.ovpn` file to the user securely
-3. User imports the file into their OpenVPN client
+3. User imports the file into their VPN client
 
 **Supported Clients:**
-- **Windows**: OpenVPN GUI
+- **Windows**: VPN GUI
 - **macOS**: Tunnelblick, OpenVPN Connect
 - **Linux**: OpenVPN CLI, NetworkManager
 - **Android**: OpenVPN for Android
@@ -325,19 +325,19 @@ sudo apt install nginx certbot python3-certbot-nginx -y
 Create Nginx configuration:
 
 ```bash
-sudo nano /etc/nginx/sites-available/ovpn
+sudo nano /etc/nginx/sites-available/vpn
 ```
 
 Add this configuration:
 
 ```nginx
 # API Backend
-upstream ovpn_api {
+upstream vpn_api {
     server localhost:3001;
 }
 
 # Web Frontend
-upstream ovpn_web {
+upstream vpn_web {
     server localhost:3000;
 }
 
@@ -357,7 +357,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
     location / {
-        proxy_pass http://ovpn_web;
+        proxy_pass http://vpn_web;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -378,7 +378,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
     location / {
-        proxy_pass http://ovpn_api;
+        proxy_pass http://vpn_api;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -391,7 +391,7 @@ server {
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/ovpn /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/vpn /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -437,14 +437,14 @@ sudo ufw enable
 Create backup script:
 
 ```bash
-sudo nano /opt/ovpn-manager/backup.sh
+sudo nano /opt/vpn-manager/backup.sh
 ```
 
 Add this content:
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/opt/ovpn-backups"
+BACKUP_DIR="/opt/vpn-backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
@@ -452,25 +452,25 @@ mkdir -p $BACKUP_DIR
 # Backup SQLite database
 if [ "$DATABASE_TYPE" = "sqlite" ]; then
     docker run --rm \
-        -v ovpn_api_data:/data \
+        -v vpn_api_data:/data \
         -v $BACKUP_DIR:/backup \
-        alpine tar czf /backup/ovpn-sqlite-$DATE.tar.gz /data
+        alpine tar czf /backup/vpn-sqlite-$DATE.tar.gz /data
 fi
 
 # Backup PostgreSQL
 if [ "$DATABASE_TYPE" = "postgres" ]; then
-    docker compose -f /opt/ovpn-manager/docker-compose.yml \
-        exec -T postgres pg_dump -U ovpn ovpn > $BACKUP_DIR/ovpn-postgres-$DATE.sql
+    docker compose -f /opt/vpn-manager/docker-compose.yml \
+        exec -T postgres pg_dump -U vpn vpn > $BACKUP_DIR/vpn-postgres-$DATE.sql
 fi
 
 # Backup MySQL
 if [ "$DATABASE_TYPE" = "mysql" ]; then
-    docker compose -f /opt/ovpn-manager/docker-compose.yml \
-        exec -T mariadb mysqldump -u ovpn -p$MYSQL_PASSWORD ovpn > $BACKUP_DIR/ovpn-mysql-$DATE.sql
+    docker compose -f /opt/vpn-manager/docker-compose.yml \
+        exec -T mariadb mysqldump -u vpn -p$MYSQL_PASSWORD vpn > $BACKUP_DIR/vpn-mysql-$DATE.sql
 fi
 
 # Keep only last 7 days of backups
-find $BACKUP_DIR -name "ovpn-*" -mtime +7 -delete
+find $BACKUP_DIR -name "vpn-*" -mtime +7 -delete
 
 echo "Backup completed: $DATE"
 ```
@@ -478,7 +478,7 @@ echo "Backup completed: $DATE"
 Make it executable:
 
 ```bash
-sudo chmod +x /opt/ovpn-manager/backup.sh
+sudo chmod +x /opt/vpn-manager/backup.sh
 ```
 
 Add to crontab (daily at 2 AM):
@@ -490,7 +490,7 @@ sudo crontab -e
 Add this line:
 
 ```
-0 2 * * * /opt/ovpn-manager/backup.sh >> /var/log/ovpn-backup.log 2>&1
+0 2 * * * /opt/vpn-manager/backup.sh >> /var/log/vpn-backup.log 2>&1
 ```
 
 ---
@@ -500,7 +500,7 @@ Add this line:
 ### Pull Latest Images
 
 ```bash
-cd /opt/ovpn-manager
+cd /opt/vpn-manager
 docker compose pull
 ```
 
@@ -606,10 +606,10 @@ docker compose ps
 Test database connection:
 ```bash
 # PostgreSQL
-docker compose exec postgres psql -U ovpn -d ovpn -c "SELECT 1;"
+docker compose exec postgres psql -U vpn -d vpn -c "SELECT 1;"
 
 # MySQL
-docker compose exec mariadb mysql -u ovpn -p -e "SELECT 1;"
+docker compose exec mariadb mysql -u vpn -p -e "SELECT 1;"
 ```
 
 ### Port Already in Use
@@ -677,39 +677,39 @@ Install monitoring tools like:
 
 ## 🗑️ Uninstallation
 
-If you need to remove OVPN Manager:
+If you need to remove VPN Manager:
 
 ### Quick Uninstall
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/uninstall-prod.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-prod.sh | sudo bash
 ```
 
 ### Manual Uninstall
 
 ```bash
 # Stop services
-cd /opt/ovpn-manager
+cd /opt/vpn-manager
 docker compose down
 
 # Remove volumes (WARNING: This deletes all data!)
-docker volume rm ovpn_api_data ovpn_postgres_data ovpn_mariadb_data
+docker volume rm vpn_api_data vpn_postgres_data vpn_mariadb_data
 
 # Remove images
-docker rmi $(docker images | grep ovpn-manager | awk '{print $3}')
+docker rmi $(docker images | grep vpn-manager | awk '{print $3}')
 
 # Remove installation directory
-sudo rm -rf /opt/ovpn-manager
+sudo rm -rf /opt/vpn-manager
 
 # Remove backups (optional)
-sudo rm -rf /opt/ovpn-backups
+sudo rm -rf /opt/vpn-backups
 
 # Remove cron jobs (if configured)
-sudo crontab -e  # Remove OVPN-related lines
+sudo crontab -e  # Remove vpn-related lines
 
 # Remove Nginx config (if configured)
-sudo rm /etc/nginx/sites-enabled/ovpn
-sudo rm /etc/nginx/sites-available/ovpn
+sudo rm /etc/nginx/sites-enabled/vpn
+sudo rm /etc/nginx/sites-available/vpn
 sudo systemctl reload nginx
 ```
 
@@ -719,7 +719,7 @@ sudo systemctl reload nginx
 
 - [Full Docker Documentation](DOCKER.md)
 - [Main README](README.md)
-- [GitHub Repository](https://github.com/adityadarma/ovpn-manager)
+- [GitHub Repository](https://github.com/adityadarma/vpn-manager)
 
 ---
 
@@ -738,7 +738,7 @@ If you encounter issues:
 
 ```bash
 # Installation directory
-cd /opt/ovpn-manager
+cd /opt/vpn-manager
 
 # Start services
 docker compose up -d
@@ -754,7 +754,7 @@ docker compose pull
 docker compose up -d
 
 # Backup (if script created)
-/opt/ovpn-manager/backup.sh
+/opt/vpn-manager/backup.sh
 
 # Access
 # Web UI: http://your-server:3000

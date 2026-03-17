@@ -4,7 +4,7 @@
 # Sync Node Certificates to Dashboard
 # ==========================================
 # This script uploads CA cert and TLS-Crypt key
-# from VPN node to the OVPN Manager dashboard
+# from VPN node to the VPN Manager dashboard
 
 set -e
 

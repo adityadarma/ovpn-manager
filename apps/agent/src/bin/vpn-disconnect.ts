@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 /**
- * openvpn-disconnect — Client disconnect hook
+ * vpn-disconnect — Client disconnect hook
  *
- * Called by OpenVPN: client-disconnect /path/to/this/script
+ * Called by VPN: client-disconnect /path/to/this/script
  *
- * OpenVPN env vars:
+ * VPN env vars:
  *   $common_name         — username
  *   $ifconfig_pool_remote_ip — VPN IP
  *   $bytes_sent          — bytes sent by client
  *   $bytes_received      — bytes received by client
  *   $time_duration       — session duration in seconds
  *
- * OpenVPN server config:
- *   client-disconnect /usr/local/bin/openvpn-disconnect
+ * VPN server config:
+ *   client-disconnect /usr/local/bin/vpn-disconnect
  */
 
 import path from 'node:path'
 import dotenv from 'dotenv'
 
-const envPath = process.env['OVPN_ENV_PATH'] ?? path.resolve('/etc/openvpn-agent/.env')
+const envPath = process.env['VPN_ENV_PATH'] ?? path.resolve('/etc/vpn-agent/.env')
 dotenv.config({ path: envPath })
 
 const MANAGER_URL = process.env['AGENT_MANAGER_URL']
@@ -26,11 +26,11 @@ const VPN_TOKEN = process.env['VPN_TOKEN']
 const NODE_ID = process.env['AGENT_NODE_ID']
 
 if (!MANAGER_URL || !VPN_TOKEN || !NODE_ID) {
-  console.error('[openvpn-disconnect] AGENT_MANAGER_URL, VPN_TOKEN and AGENT_NODE_ID must be set')
+  console.error('[vpn-disconnect] AGENT_MANAGER_URL, VPN_TOKEN and AGENT_NODE_ID must be set')
   process.exit(1)
 }
 
-// Read OpenVPN-provided env vars
+// Read VPN-provided env vars
 const username = process.env['common_name'] ?? ''
 const vpnIp = process.env['ifconfig_pool_remote_ip'] ?? ''
 const bytesSent = parseInt(process.env['bytes_sent'] ?? '0', 10)
@@ -39,11 +39,11 @@ const duration = parseInt(process.env['time_duration'] ?? '0', 10)
 
 async function main() {
   if (!username) {
-    console.error('[openvpn-disconnect] Missing common_name env var')
+    console.error('[vpn-disconnect] Missing common_name env var')
     process.exit(1)
   }
 
-  console.log(`[openvpn-disconnect] ${username} disconnected — duration: ${duration}s, ↑${bytesSent}B ↓${bytesReceived}B`)
+  console.log(`[vpn-disconnect] ${username} disconnected — duration: ${duration}s, ↑${bytesSent}B ↓${bytesReceived}B`)
 
   // 1. Report disconnect to manager API
   try {
@@ -63,14 +63,14 @@ async function main() {
 
     if (res.ok) {
       const data = await res.json() as { sessions_closed: number }
-      console.log(`[openvpn-disconnect] ✅ ${data.sessions_closed} session(s) closed in manager`)
+      console.log(`[vpn-disconnect] ✅ ${data.sessions_closed} session(s) closed in manager`)
     } else {
       const err = await res.json() as { error: string }
-      console.warn(`[openvpn-disconnect] ⚠️  Manager responded: ${err.error}`)
+      console.warn(`[vpn-disconnect] ⚠️  Manager responded: ${err.error}`)
     }
   } catch (err) {
     // Non-fatal — manager might be temporarily down; session cleanup will happen on next heartbeat
-    console.warn('[openvpn-disconnect] ⚠️  Manager unreachable:', (err as Error).message)
+    console.warn('[vpn-disconnect] ⚠️  Manager unreachable:', (err as Error).message)
   }
 
   // 2. Remove iptables/nftables rules for this client

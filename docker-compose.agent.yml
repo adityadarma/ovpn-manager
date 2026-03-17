@@ -1,10 +1,10 @@
 # ============================================================
-# OpenVPN Manager — Standalone Agent Docker Compose
+# VPN Manager — Standalone Agent Docker Compose
 # ============================================================
 # This compose file is for running ONLY the agent on a VPN node
 # 
 # Prerequisites:
-#   1. OpenVPN server must be installed and running on the host
+#   1. VPN server must be installed and running on the host
 #   2. Node must be registered in Manager Web UI
 #   3. .env file must be configured with credentials
 #
@@ -13,7 +13,7 @@
 #
 # Network Mode:
 #   Uses 'host' network mode because:
-#   - Agent needs to access OpenVPN running on host (not in container)
+#   - Agent needs to access VPN running on host (not in container)
 #   - Agent needs to connect to Manager API on external server
 #   - Agent needs to manage host iptables/firewall rules
 #   - No network isolation needed for standalone agent
@@ -22,8 +22,8 @@
 
 services:
   agent:
-    image: ghcr.io/adityadarma/ovpn-manager:agent
-    container_name: ovpn-agent
+    image: ghcr.io/adityadarma/vpn-manager:agent
+    container_name: vpn-agent
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -32,7 +32,7 @@ services:
       AGENT_SECRET_TOKEN: ${AGENT_SECRET_TOKEN:?AGENT_SECRET_TOKEN is required}
       AGENT_POLL_INTERVAL_MS: ${AGENT_POLL_INTERVAL_MS:-5000}
       AGENT_HEARTBEAT_INTERVAL_MS: ${AGENT_HEARTBEAT_INTERVAL_MS:-30000}
-    # Use host network for direct access to host OpenVPN and external Manager API
+    # Use host network for direct access to host VPN and external Manager API
     network_mode: host
     cap_add:
       - NET_ADMIN

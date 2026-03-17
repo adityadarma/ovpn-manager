@@ -1,18 +1,18 @@
 {
-  "name": "ovpn-manager",
+  "name": "vpn-manager",
   "version": "1.1.0",
   "private": true,
-  "description": "OpenVPN Manager — VPN Management System",
+  "description": "VPN Manager — Modern VPN Management",
   "scripts": {
-    "dev": "turbo run dev --filter=!@ovpn/agent",
-    "agent:dev": "turbo run dev --filter=@ovpn/agent",
+    "dev": "turbo run dev --filter=!@vpn/agent",
+    "agent:dev": "turbo run dev --filter=@vpn/agent",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
-    "db:migrate": "pnpm --filter @ovpn/db migrate",
-    "db:seed": "pnpm --filter @ovpn/db seed",
-    "db:rollback": "pnpm --filter @ovpn/db rollback"
+    "db:migrate": "pnpm --filter @vpn/db migrate",
+    "db:seed": "pnpm --filter @vpn/db seed",
+    "db:rollback": "pnpm --filter @vpn/db rollback"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

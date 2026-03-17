@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
-import { CreatePolicySchema } from '@ovpn/shared'
+import { CreatePolicySchema } from '@vpn/shared'
 
 const policyRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/v1/policies

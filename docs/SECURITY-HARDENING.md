@@ -1,10 +1,10 @@
 # Security Hardening Guide
 
-This guide covers optional security enhancements for production OpenVPN deployments.
+This guide covers optional security enhancements for production VPN deployments.
 
 ## User/Group Privilege Dropping
 
-By default, OpenVPN Manager runs OpenVPN as `root` to avoid permission issues. For enhanced security, you can configure OpenVPN to drop privileges after initialization.
+By default, VPN Manager runs VPN as `root` to avoid permission issues. For enhanced security, you can configure VPN to drop privileges after initialization.
 
 ### Default Configuration (Current)
 
@@ -21,7 +21,7 @@ By default, OpenVPN Manager runs OpenVPN as `root` to avoid permission issues. F
 - ✅ Scripts work without issues
 
 **Cons:**
-- ⚠️ OpenVPN runs as root (higher risk if compromised)
+- ⚠️ VPN runs as root (higher risk if compromised)
 
 ### Hardened Configuration (Recommended for Production)
 
@@ -43,7 +43,7 @@ By default, OpenVPN Manager runs OpenVPN as `root` to avoid permission issues. F
    group nogroup
    ```
 
-3. **Restart OpenVPN**:
+3. **Restart VPN**:
    ```bash
    sudo systemctl restart openvpn-server@server.service
    ```
@@ -96,7 +96,7 @@ By default, OpenVPN Manager runs OpenVPN as `root` to avoid permission issues. F
 
 ### 1. Firewall Rules
 
-Restrict OpenVPN port to specific IPs:
+Restrict VPN port to specific IPs:
 
 ```bash
 # Allow only from specific IPs
@@ -195,7 +195,7 @@ If using SELinux or AppArmor, create policies:
 # Check if SELinux is enforcing
 getenforce
 
-# Allow OpenVPN
+# Allow VPN
 sudo setsebool -P openvpn_enable_homedirs 1
 sudo setsebool -P openvpn_can_network_connect 1
 ```
@@ -205,7 +205,7 @@ sudo setsebool -P openvpn_can_network_connect 1
 # Check AppArmor status
 sudo aa-status
 
-# OpenVPN profile usually included by default
+# VPN profile usually included by default
 # If issues, set to complain mode:
 sudo aa-complain /usr/sbin/openvpn
 ```
@@ -221,7 +221,7 @@ sudo aa-complain /usr/sbin/openvpn
 - [ ] Client certificate validation enabled
 - [ ] Logging configured and monitored
 - [ ] Regular certificate rotation
-- [ ] Keep OpenVPN updated
+- [ ] Keep VPN updated
 - [ ] Disable unused features (compression if not needed)
 
 ## Testing Security Configuration
@@ -236,7 +236,7 @@ After hardening:
 
 2. **Verify privileges**:
    ```bash
-   # Check OpenVPN process user
+   # Check VPN process user
    ps aux | grep openvpn
    ```
 
@@ -275,7 +275,7 @@ sudo chmod 755 /etc/openvpn/server
 If agent fails to reload after privilege dropping:
 
 ```bash
-# Option 1: Keep OpenVPN as root (less secure)
+# Option 1: Keep VPN as root (less secure)
 # Comment out user/group in config
 
 # Option 2: Use systemd reload (more secure)

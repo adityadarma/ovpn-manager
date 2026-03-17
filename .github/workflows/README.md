@@ -2,7 +2,7 @@
 
 ## Docker Build and Push Workflow
 
-This workflow builds and pushes Docker images for the OVPN Manager services (API, Web, Agent).
+This workflow builds and pushes Docker images for the VPN Manager services (API, Web, Agent).
 
 ### Trigger Methods
 
@@ -105,10 +105,10 @@ After building, the workflow:
 ### Image Tags
 
 Built images are tagged as:
-- `ghcr.io/OWNER/ovpn-manager:api` - Latest API image
-- `ghcr.io/OWNER/ovpn-manager:web` - Latest Web image
-- `ghcr.io/OWNER/ovpn-manager:agent` - Latest Agent image
-- `ghcr.io/OWNER/ovpn-manager:v1.0.0-api` - Version-tagged images
+- `ghcr.io/OWNER/vpn-manager:api` - Latest API image
+- `ghcr.io/OWNER/vpn-manager:web` - Latest Web image
+- `ghcr.io/OWNER/vpn-manager:agent` - Latest Agent image
+- `ghcr.io/OWNER/vpn-manager:v1.0.0-api` - Version-tagged images
 
 ### Usage Examples
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OpenVPN Manager — Quick Start Script
+# VPN Manager — Quick Start Script
 # Usage: ./scripts/start.sh [dev|prod|docker]
 set -e
 
@@ -7,7 +7,7 @@ MODE=${1:-dev}
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "🔷 OpenVPN Manager"
+echo "🔷 VPN Manager"
 echo "================================"
 
 check_env() {

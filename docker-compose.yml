@@ -1,5 +1,5 @@
 # ============================================================
-# OpenVPN Manager — Production Docker Compose
+# VPN Manager — Production Docker Compose
 # ============================================================
 # Uses pre-built images from GitHub Container Registry
 #
@@ -24,33 +24,33 @@ services:
   # ── Databases ──
   postgres:
     image: postgres:16-alpine
-    container_name: ovpn-postgres
+    container_name: vpn-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ovpn}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ovpn_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-ovpn}
+      POSTGRES_USER: ${POSTGRES_USER:-vpn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vpn_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-vpn}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ovpn}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vpn}" ]
       interval: 10s
       timeout: 5s
       retries: 5
     profiles: [ postgres ]
     networks:
-      - ovpn-network
+      - vpn-network
 
   mariadb:
     image: mariadb:11
-    container_name: ovpn-mariadb
+    container_name: vpn-mariadb
     restart: unless-stopped
     environment:
-      MARIADB_USER: ${MYSQL_USER:-ovpn}
-      MARIADB_PASSWORD: ${MYSQL_PASSWORD:-ovpn_secret}
-      MARIADB_DATABASE: ${MYSQL_DATABASE:-ovpn}
+      MARIADB_USER: ${MYSQL_USER:-vpn}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD:-vpn_secret}
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-vpn}
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -63,16 +63,16 @@ services:
       retries: 5
     profiles: [ mysql ]
     networks:
-      - ovpn-network
+      - vpn-network
 
   # ── Manager API ──
   api:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-manager:api
+    image: ghcr.io/adityadarma/vpn-manager:api
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: ovpn-api
+    container_name: vpn-api
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -82,7 +82,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       DATABASE_URL: ${DATABASE_URL}
-      DATABASE_SQLITE_PATH: /data/ovpn.sqlite
+      DATABASE_SQLITE_PATH: /data/vpn.sqlite
     ports:
       - "${API_PORT:-3001}:${API_PORT:-3001}"
     volumes:
@@ -94,7 +94,7 @@ services:
       retries: 5
       start_period: 60s
     networks:
-      - ovpn-network
+      - vpn-network
     logging:
       driver: "json-file"
       options:
@@ -104,11 +104,11 @@ services:
   # ── Web UI ──
   web:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-manager:web
+    image: ghcr.io/adityadarma/vpn-manager:web
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: ovpn-web
+    container_name: vpn-web
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -119,7 +119,7 @@ services:
       api:
         condition: service_healthy
     networks:
-      - ovpn-network
+      - vpn-network
     logging:
       driver: "json-file"
       options:
@@ -129,11 +129,11 @@ services:
   # ── VPN Agent ──
   agent:
     # Pre-built image from GitHub Container Registry
-    image: ghcr.io/adityadarma/ovpn-manager:agent
+    image: ghcr.io/adityadarma/vpn-manager:agent
     build:
       context: .
       dockerfile: apps/agent/Dockerfile
-    container_name: ovpn-agent
+    container_name: vpn-agent
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -143,7 +143,7 @@ services:
       AGENT_POLL_INTERVAL_MS: ${AGENT_POLL_INTERVAL_MS:-5000}
       AGENT_HEARTBEAT_INTERVAL_MS: ${AGENT_HEARTBEAT_INTERVAL_MS:-30000}
     networks:
-      - ovpn-network
+      - vpn-network
     cap_add:
       - NET_ADMIN
     devices:
@@ -159,7 +159,7 @@ services:
         max-file: "3"
 
 networks:
-  ovpn-network:
+  vpn-network:
     driver: bridge
 
 volumes:

@@ -22,11 +22,11 @@ COPY apps/api/start.sh ./start.sh
 COPY apps/api/tsup.config.ts ./apps/api/tsup.config.ts
 
 # Build the bundled Javascript code via tsup
-RUN pnpm --filter @ovpn/api build
+RUN pnpm --filter @vpn/api build
 
 # Isolate app with only its required production dependencies
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm deploy --filter @ovpn/api --prod /prod/api
+    pnpm deploy --filter @vpn/api --prod /prod/api
 
 # Copy tsup bundle into the deployed payload
 RUN cp -r /app/apps/api/dist /prod/api/dist

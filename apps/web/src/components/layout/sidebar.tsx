@@ -56,8 +56,8 @@ export function AppSidebar() {
   const user = useAuthStore((s) => s.user)
 
   const handleLogout = () => {
-    document.cookie = 'ovpn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
-    localStorage.removeItem('ovpn-auth')
+    document.cookie = 'vpn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+    localStorage.removeItem('vpn-auth')
     window.location.href = '/login'
   }
 
@@ -72,7 +72,7 @@ export function AppSidebar() {
                 <Shield className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">OpenVPN Manager</span>
+                <span className="truncate font-semibold">VPN Manager</span>
                 <span className="truncate text-xs text-muted-foreground">VPN Management</span>
               </div>
             </SidebarMenuButton>

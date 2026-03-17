@@ -30,11 +30,11 @@ export async function handleGenerateClientCert(params: Record<string, unknown>):
   const EASYRSA_BIN = `${EASYRSA_DIR}/easyrsa`
   
   if (!existsSync(EASYRSA_DIR)) {
-    throw new Error('EasyRSA directory not found. Please install OpenVPN server first.')
+    throw new Error('EasyRSA directory not found. Please install VPN server first.')
   }
 
   if (!existsSync(EASYRSA_BIN)) {
-    throw new Error(`EasyRSA script not found at ${EASYRSA_BIN}. Please check OpenVPN installation.`)
+    throw new Error(`EasyRSA script not found at ${EASYRSA_BIN}. Please check VPN installation.`)
   }
 
   try {

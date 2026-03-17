@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# OpenVPN Manager - Production Installation Script
+# VPN Manager - Production Installation Script
 # ============================================================
-# This script installs OpenVPN Manager without cloning the repo
-# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-prod.sh | sudo bash
+# This script installs VPN Manager without cloning the repo
+# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-prod.sh | sudo bash
 # ============================================================
 
 set -e
@@ -16,14 +16,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="/opt/ovpn-manager"
-REPO_URL="https://raw.githubusercontent.com/adityadarma/ovpn-manager/main"
+INSTALL_DIR="/opt/vpn-manager"
+REPO_URL="https://raw.githubusercontent.com/adityadarma/vpn-manager/main"
 
 # Functions
 print_header() {
     echo -e "${BLUE}"
     echo "============================================================"
-    echo "  OpenVPN Manager - Production Installation"
+    echo "  VPN Manager - Production Installation"
     echo "============================================================"
     echo -e "${NC}"
 }
@@ -165,7 +165,7 @@ configure_env() {
     # Create .env file
     cat > .env << EOF
 # ============================================================
-# OpenVPN Manager — Production Environment
+# VPN Manager — Production Environment
 # Generated on $(date)
 # ============================================================
 
@@ -190,22 +190,22 @@ EOF
         cat >> .env << EOF
 
 # PostgreSQL
-POSTGRES_USER=ovpn
+POSTGRES_USER=vpn
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-POSTGRES_DB=ovpn
+POSTGRES_DB=vpn
 POSTGRES_PORT=5432
-DATABASE_URL=postgresql://ovpn:$POSTGRES_PASSWORD@postgres:5432/ovpn
+DATABASE_URL=postgresql://vpn:$POSTGRES_PASSWORD@postgres:5432/vpn
 EOF
     elif [ "$DATABASE_TYPE" = "mysql" ]; then
         cat >> .env << EOF
 
 # MySQL/MariaDB
-MYSQL_USER=ovpn
+MYSQL_USER=vpn
 MYSQL_PASSWORD=$MYSQL_PASSWORD
-MYSQL_DATABASE=ovpn
+MYSQL_DATABASE=vpn
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
 MYSQL_PORT=3306
-DATABASE_URL=mysql://ovpn:$MYSQL_PASSWORD@mariadb:3306/ovpn
+DATABASE_URL=mysql://vpn:$MYSQL_PASSWORD@mariadb:3306/vpn
 EOF
     fi
 
@@ -230,7 +230,7 @@ EOF
     # Save credentials to a secure file
     cat > credentials.txt << EOF
 ============================================================
-OpenVPN Manager - Installation Credentials
+VPN Manager - Installation Credentials
 Generated on $(date)
 ============================================================
 
@@ -241,16 +241,16 @@ EOF
 
     if [ "$DATABASE_TYPE" = "postgres" ]; then
         cat >> credentials.txt << EOF
-PostgreSQL User: ovpn
+PostgreSQL User: vpn
 PostgreSQL Password: $POSTGRES_PASSWORD
-PostgreSQL Database: ovpn
+PostgreSQL Database: vpn
 EOF
     elif [ "$DATABASE_TYPE" = "mysql" ]; then
         cat >> credentials.txt << EOF
-MySQL User: ovpn
+MySQL User: vpn
 MySQL Password: $MYSQL_PASSWORD
 MySQL Root Password: $MYSQL_ROOT_PASSWORD
-MySQL Database: ovpn
+MySQL Database: vpn
 EOF
     fi
 
@@ -321,30 +321,30 @@ create_backup_script() {
     
     cat > backup.sh << 'EOF'
 #!/bin/bash
-BACKUP_DIR="/opt/ovpn-backups"
+BACKUP_DIR="/opt/vpn-backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
 
 # Load environment
-source /opt/ovpn-manager/.env
+source /opt/vpn-manager/.env
 
 # Backup based on database type
 if [ "$DATABASE_TYPE" = "sqlite" ]; then
     docker run --rm \
-        -v ovpn_api_data:/data \
+        -v vpn_api_data:/data \
         -v $BACKUP_DIR:/backup \
-        alpine tar czf /backup/ovpn-sqlite-$DATE.tar.gz /data
+        alpine tar czf /backup/vpn-sqlite-$DATE.tar.gz /data
 elif [ "$DATABASE_TYPE" = "postgres" ]; then
-    docker compose -f /opt/ovpn-manager/docker-compose.yml \
-        exec -T postgres pg_dump -U ovpn ovpn > $BACKUP_DIR/ovpn-postgres-$DATE.sql
+    docker compose -f /opt/vpn-manager/docker-compose.yml \
+        exec -T postgres pg_dump -U vpn vpn > $BACKUP_DIR/vpn-postgres-$DATE.sql
 elif [ "$DATABASE_TYPE" = "mysql" ]; then
-    docker compose -f /opt/ovpn-manager/docker-compose.yml \
-        exec -T mariadb mysqldump -u ovpn -p$MYSQL_PASSWORD ovpn > $BACKUP_DIR/ovpn-mysql-$DATE.sql
+    docker compose -f /opt/vpn-manager/docker-compose.yml \
+        exec -T mariadb mysqldump -u vpn -p$MYSQL_PASSWORD vpn > $BACKUP_DIR/vpn-mysql-$DATE.sql
 fi
 
 # Keep only last 7 days
-find $BACKUP_DIR -name "ovpn-*" -mtime +7 -delete
+find $BACKUP_DIR -name "vpn-*" -mtime +7 -delete
 
 echo "Backup completed: $DATE"
 EOF
@@ -384,7 +384,7 @@ print_summary() {
     echo "  Backup:       $INSTALL_DIR/backup.sh"
     echo ""
     echo -e "${BLUE}Documentation:${NC}"
-    echo "  Full guide: https://github.com/adityadarma/ovpn-manager/blob/main/PRODUCTION-INSTALL.md"
+    echo "  Full guide: https://github.com/adityadarma/vpn-manager/blob/main/PRODUCTION-INSTALL.md"
     echo ""
 }
 

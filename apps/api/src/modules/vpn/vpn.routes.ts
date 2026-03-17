@@ -3,13 +3,13 @@ import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
 
 /**
- * VPN Auth API — called by openvpn-client agent living on the VPN server.
+ * VPN Auth API — called by vpn-client agent living on the VPN server.
  * All endpoints are protected by X-VPN-Token header (vpn_token from env).
  *
  * Flow:
- *   1. openvpn-login  → POST /vpn/auth       (username-as-common-name, auth-user-pass-verify)
- *   2. openvpn-connect→ POST /vpn/connect     (client-connect script)
- *   3. openvpn-disconnect → POST /vpn/disconnect (client-disconnect script)
+ *   1. vpn-login  → POST /vpn/auth       (username-as-common-name, auth-user-pass-verify)
+ *   2. vpn-connect→ POST /vpn/connect     (client-connect script)
+ *   3. vpn-disconnect → POST /vpn/disconnect (client-disconnect script)
  */
 
 const vpnRoutes: FastifyPluginAsync = async (app) => {
@@ -28,7 +28,7 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
 
   /**
    * POST /api/v1/vpn/auth
-   * Called by: openvpn-login script (auth-user-pass-verify hook)
+   * Called by: vpn-login script (auth-user-pass-verify hook)
    * Body: { username, password, node_id }
    * Returns: 200 OK if credentials valid + user is active, else 401
    */
@@ -96,7 +96,7 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
 
   /**
    * POST /api/v1/vpn/connect
-   * Called by: openvpn-connect script (client-connect hook)
+   * Called by: vpn-connect script (client-connect hook)
    * Body: { username, vpn_ip, node_id, common_name }
    * Opens a new session row in vpn_sessions.
    */
@@ -154,7 +154,7 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
 
   /**
    * POST /api/v1/vpn/disconnect
-   * Called by: openvpn-disconnect script (client-disconnect hook)
+   * Called by: vpn-disconnect script (client-disconnect hook)
    * Body: { username, node_id, bytes_sent, bytes_received }
    * Closes the open session and records traffic stats.
    */

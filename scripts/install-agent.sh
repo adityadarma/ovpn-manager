@@ -1,9 +1,9 @@
 #!/bin/bash
 # ============================================================
-# OpenVPN Manager - Standalone Agent Installation Script
+# VPN Manager - Standalone Agent Installation Script
 # ============================================================
 # This script installs only the Agent on a VPN node server
-# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/ovpn-manager/main/scripts/install-agent.sh | sudo bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-agent.sh | sudo bash
 # ============================================================
 
 set -e
@@ -16,14 +16,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="/opt/ovpn-agent"
-REPO_URL="https://raw.githubusercontent.com/adityadarma/ovpn-manager/main"
+INSTALL_DIR="/opt/vpn-agent"
+REPO_URL="https://raw.githubusercontent.com/adityadarma/vpn-manager/main"
 
 # Functions
 print_header() {
     echo -e "${BLUE}"
     echo "============================================================"
-    echo "  OpenVPN Manager - Standalone Agent Installation"
+    echo "  VPN Manager - Standalone Agent Installation"
     echo "============================================================"
     echo -e "${NC}"
 }
@@ -417,7 +417,7 @@ create_management_scripts() {
     # Start script
     cat > start.sh << 'EOF'
 #!/bin/bash
-cd /opt/ovpn-agent
+cd /opt/vpn-agent
 docker compose up -d
 echo "Agent started"
 EOF
@@ -426,7 +426,7 @@ EOF
     # Stop script
     cat > stop.sh << 'EOF'
 #!/bin/bash
-cd /opt/ovpn-agent
+cd /opt/vpn-agent
 docker compose down
 echo "Agent stopped"
 EOF
@@ -435,7 +435,7 @@ EOF
     # Restart script
     cat > restart.sh << 'EOF'
 #!/bin/bash
-cd /opt/ovpn-agent
+cd /opt/vpn-agent
 docker compose restart
 echo "Agent restarted"
 EOF
@@ -444,7 +444,7 @@ EOF
     # Logs script
     cat > logs.sh << 'EOF'
 #!/bin/bash
-cd /opt/ovpn-agent
+cd /opt/vpn-agent
 docker compose logs -f
 EOF
     chmod +x logs.sh
@@ -452,7 +452,7 @@ EOF
     # Status script
     cat > status.sh << 'EOF'
 #!/bin/bash
-cd /opt/ovpn-agent
+cd /opt/vpn-agent
 docker compose ps
 echo ""
 echo "Recent logs:"
@@ -466,9 +466,9 @@ EOF
 setup_systemd_service() {
     print_info "Setting up systemd service..."
     
-    cat > /etc/systemd/system/ovpn-agent.service << EOF
+    cat > /etc/systemd/system/vpn-agent.service << EOF
 [Unit]
-Description=OpenVPN Manager Agent
+Description=VPN Manager Agent
 Requires=docker.service
 After=docker.service openvpn-server@server.service
 
@@ -485,7 +485,7 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    systemctl enable ovpn-agent.service
+    systemctl enable vpn-agent.service
     
     print_success "Systemd service created and enabled"
 }
@@ -505,9 +505,9 @@ print_summary() {
     docker compose ps
     echo ""
     echo -e "${BLUE}Management Commands:${NC}"
-    echo "  Start:    $INSTALL_DIR/start.sh   or   systemctl start ovpn-agent"
-    echo "  Stop:     $INSTALL_DIR/stop.sh    or   systemctl stop ovpn-agent"
-    echo "  Restart:  $INSTALL_DIR/restart.sh or   systemctl restart ovpn-agent"
+    echo "  Start:    $INSTALL_DIR/start.sh   or   systemctl start vpn-agent"
+    echo "  Stop:     $INSTALL_DIR/stop.sh    or   systemctl stop vpn-agent"
+    echo "  Restart:  $INSTALL_DIR/restart.sh or   systemctl restart vpn-agent"
     echo "  Logs:     $INSTALL_DIR/logs.sh"
     echo "  Status:   $INSTALL_DIR/status.sh"
     echo ""
@@ -523,7 +523,7 @@ print_summary() {
     echo -e "${BLUE}Troubleshooting:${NC}"
     echo "  View logs:        docker compose -f $INSTALL_DIR/docker-compose.yml logs -f"
     echo "  Check connection: curl -v $MANAGER_URL/api/v1/health"
-    echo "  Restart agent:    systemctl restart ovpn-agent"
+    echo "  Restart agent:    systemctl restart vpn-agent"
     echo ""
 }
 

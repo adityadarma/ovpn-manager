@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
-import { TaskResultSchema } from '@ovpn/shared'
+import { TaskResultSchema } from '@vpn/shared'
 
 const taskRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/v1/tasks  — list all tasks

@@ -11,7 +11,7 @@ const DATA_DIR = process.env['DATABASE_SQLITE_PATH']
   ? path.dirname(process.env['DATABASE_SQLITE_PATH'])
   : path.join(MONOREPO_ROOT, 'data')
 
-const SQLITE_FILE = process.env['DATABASE_SQLITE_PATH'] ?? path.join(MONOREPO_ROOT, 'data', 'ovpn.sqlite')
+const SQLITE_FILE = process.env['DATABASE_SQLITE_PATH'] ?? path.join(MONOREPO_ROOT, 'data', 'vpn.sqlite')
 
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations')
 const SEEDS_DIR = path.join(__dirname, 'seeds')
