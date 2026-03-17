@@ -132,17 +132,24 @@ const userRoutes: FastifyPluginAsync = async (app) => {
       // If user has existing certificate, add to revocation list
       if (user.client_cert) {
         try {
-          await app.db('cert_revocations').insert({
-            id: crypto.randomUUID(),
-            user_id: id,
-            node_id: nodeId,
-            revoked_cert: user.client_cert,
-            reason: 'Certificate regenerated',
-            revoked_by: authUser.id,
-            revoked_at: new Date()
-          })
-        } catch (err) {
-          console.error('Failed to add to revocation list:', err)
+          // Verify node exists before inserting
+          const nodeExists = await app.db('vpn_nodes').where({ id: nodeId }).first()
+          if (nodeExists) {
+            await app.db('cert_revocations').insert({
+              id: crypto.randomUUID(),
+              user_id: id,
+              node_id: nodeId,
+              revoked_cert: user.client_cert,
+              reason: 'Certificate regenerated',
+              revoked_by: authUser.id,
+              revoked_at: new Date()
+            })
+          } else {
+            console.warn(`[revoke-cert] Node ${nodeId} not found, skipping revocation record`)
+          }
+        } catch (err: any) {
+          console.error('Failed to add to revocation list:', err.message)
+          // Don't fail the request if revocation logging fails
         }
       }
 
@@ -258,15 +265,24 @@ const userRoutes: FastifyPluginAsync = async (app) => {
 
           // Revoke existing certificate
           if (user.client_cert) {
-            await app.db('cert_revocations').insert({
-              id: crypto.randomUUID(),
-              user_id: userId,
-              node_id: nodeId,
-              revoked_cert: user.client_cert,
-              reason: 'Bulk certificate generation',
-              revoked_by: authUser.id,
-              revoked_at: new Date()
-            }).catch(() => {})
+            try {
+              // Verify node exists before inserting
+              const nodeExists = await app.db('vpn_nodes').where({ id: nodeId }).first()
+              if (nodeExists) {
+                await app.db('cert_revocations').insert({
+                  id: crypto.randomUUID(),
+                  user_id: userId,
+                  node_id: nodeId,
+                  revoked_cert: user.client_cert,
+                  reason: 'Bulk certificate generation',
+                  revoked_by: authUser.id,
+                  revoked_at: new Date()
+                })
+              }
+            } catch (err: any) {
+              console.warn(`[bulk-gen] Failed to add revocation for user ${userId}:`, err.message)
+              // Continue with certificate generation even if revocation logging fails
+            }
           }
 
           // Create task

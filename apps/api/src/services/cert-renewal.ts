@@ -87,15 +87,26 @@ export async function checkAndRenewCertificates(db: Knex): Promise<RenewalResult
           .first()
 
         if (oldCert?.client_cert) {
-          await db('cert_revocations').insert({
-            id: crypto.randomUUID(),
-            user_id: user.id,
-            node_id: nodeId,
-            revoked_cert: oldCert.client_cert,
-            reason: 'Auto-renewal',
-            revoked_by: null, // System renewal
-            revoked_at: new Date()
-          })
+          try {
+            // Verify node exists before inserting
+            const nodeExists = await db('vpn_nodes').where({ id: nodeId }).first()
+            if (nodeExists) {
+              await db('cert_revocations').insert({
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                node_id: nodeId,
+                revoked_cert: oldCert.client_cert,
+                reason: 'Auto-renewal',
+                revoked_by: null, // System renewal
+                revoked_at: new Date()
+              })
+            } else {
+              console.warn(`[cert-renewal] Node ${nodeId} not found, skipping revocation record for user ${user.username}`)
+            }
+          } catch (err: any) {
+            console.error(`[cert-renewal] Failed to add revocation for user ${user.username}:`, err.message)
+            // Continue with renewal even if revocation logging fails
+          }
         }
 
         // Create renewal task
