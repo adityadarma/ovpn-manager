@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced Session Logging**: Comprehensive session tracking and monitoring
+  - Added `last_activity_at`, `disconnect_reason`, `client_version`, `device_name`, `geo_country`, `geo_city`, `connection_duration_seconds` to `vpn_sessions`
+  - New `session_activities` table for periodic bandwidth and connection quality metrics
+  - New `connection_attempts` table for tracking failed login attempts
+  - Enhanced `audit_logs` with `session_id` and `metadata` fields
+  - New API endpoints:
+    - `GET /api/v1/sessions` - Active sessions with enhanced details
+    - `GET /api/v1/sessions/:id` - Session details with activity history
+    - `GET /api/v1/sessions/stats` - Session statistics
+    - `POST /api/v1/sessions/:id/kick` - Admin kick user
+    - `POST /api/v1/vpn/activity` - Update session activity metrics
+    - `GET /api/v1/audit/connection-attempts` - Failed connection attempts
+    - `GET /api/v1/audit/connection-attempts/stats` - Failed attempts statistics
+  - See `docs/SESSION-LOGGING.md` for complete documentation
+
 ### Changed
 - **Security Enhancement**: Upgraded from `tls-auth` to `tls-crypt` for better security
   - `tls-crypt` provides both authentication and encryption of TLS handshake packets

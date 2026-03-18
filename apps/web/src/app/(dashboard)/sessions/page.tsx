@@ -1,21 +1,35 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { Activity, ArrowUp, ArrowDown, History, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Activity, ArrowUp, ArrowDown, History, ChevronLeft, ChevronRight, Monitor, MapPin, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
 
 interface Session {
   id: string
+  user_id: string
   username: string
+  email?: string
+  node_id: string
   node_hostname: string
+  node_region?: string
   vpn_ip: string
+  real_ip?: string
+  client_version?: string
+  device_name?: string
+  geo_country?: string
+  geo_city?: string
   bytes_sent: number
   bytes_received: number
   connected_at: string
   disconnected_at?: string | null
+  last_activity_at?: string
+  disconnect_reason?: string
+  connection_duration_seconds?: number
+  duration_seconds?: number
 }
 
 function formatBytes(bytes: number) {
@@ -24,7 +38,19 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatDuration(since: string, until?: string | null) {
+function formatDuration(since: string, until?: string | null, durationSeconds?: number) {
+  // If we have pre-calculated duration, use it
+  if (durationSeconds !== undefined && durationSeconds !== null) {
+    const m = Math.floor(durationSeconds / 60)
+    const h = Math.floor(m / 60)
+    const d = Math.floor(h / 24)
+    if (d > 0) return `${d}d ${h % 24}h`
+    if (h > 0) return `${h}h ${m % 60}m`
+    if (m === 0) return '< 1m'
+    return `${m}m`
+  }
+  
+  // Otherwise calculate from timestamps
   const start = new Date(since).getTime()
   const end = until ? new Date(until).getTime() : Date.now()
   const ms = end - start
@@ -49,6 +75,8 @@ function formatDateTime(date: string) {
 export default function SessionsPage() {
   const [page, setPage] = useState(1)
   const limit = 20
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data: sessions = [], isLoading } = useQuery<Session[]>({
     queryKey: ['sessions'],
@@ -56,10 +84,31 @@ export default function SessionsPage() {
     refetchInterval: 15_000,
   })
 
-  const { data: history = [], isLoading: isLoadingHistory } = useQuery<Session[]>({
+  const { data: historyData, isLoading: isLoadingHistory } = useQuery<{ sessions: Session[]; pagination: any }>({
     queryKey: ['sessions', 'history', page],
     queryFn: () => api.get(`/api/v1/sessions/history?page=${page}&limit=${limit}`),
   })
+
+  const kickMutation = useMutation({
+    mutationFn: (sessionId: string) => api.post(`/api/v1/sessions/${sessionId}/kick`, {}),
+    onSuccess: () => {
+      toast({
+        title: 'Session kicked',
+        description: 'User has been disconnected',
+      })
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to kick session',
+        description: error.message || 'An error occurred',
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const history = historyData?.sessions || []
+  const pagination = historyData?.pagination
 
   return (
     <div className="space-y-6">
@@ -104,20 +153,61 @@ export default function SessionsPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Device</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Node</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">VPN IP</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Duration</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Traffic</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {sessions.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-4 font-medium text-gray-900">{s.username}</td>
-                      <td className="px-5 py-4 text-gray-500">{s.node_hostname}</td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <div className="font-medium text-gray-900">{s.username}</div>
+                          {s.real_ip && (
+                            <div className="text-xs text-gray-400 font-mono">{s.real_ip}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-2">
+                          <Monitor className="h-4 w-4 text-gray-400 mt-0.5" />
+                          <div>
+                            <div className="text-gray-700 text-xs">{s.device_name || 'Unknown'}</div>
+                            {s.client_version && (
+                              <div className="text-xs text-gray-400">{s.client_version}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {s.geo_city || s.geo_country ? (
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-xs">
+                              {s.geo_city && s.geo_country ? `${s.geo_city}, ${s.geo_country}` : s.geo_country || s.geo_city}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <div className="text-gray-700">{s.node_hostname}</div>
+                          {s.node_region && (
+                            <div className="text-xs text-gray-400">{s.node_region}</div>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-5 py-4 font-mono text-gray-600 text-xs">{s.vpn_ip}</td>
-                      <td className="px-5 py-4 text-gray-500" suppressHydrationWarning>{formatDuration(s.connected_at)}</td>
+                      <td className="px-5 py-4 text-gray-500" suppressHydrationWarning>
+                        {formatDuration(s.connected_at, null, s.duration_seconds)}
+                      </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="flex items-center gap-1 text-blue-500">
@@ -130,10 +220,25 @@ export default function SessionsPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                          Connected
-                        </span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            Connected
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Disconnect ${s.username}?`)) {
+                                kickMutation.mutate(s.id)
+                              }
+                            }}
+                            disabled={kickMutation.isPending}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <UserX className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -160,6 +265,7 @@ export default function SessionsPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Device</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Node</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">VPN IP</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Connected</th>
@@ -171,14 +277,32 @@ export default function SessionsPage() {
                   <tbody className="divide-y divide-gray-100">
                     {history.map((s) => (
                       <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-5 py-4 font-medium text-gray-900">{s.username}</td>
+                        <td className="px-5 py-4">
+                          <div>
+                            <div className="font-medium text-gray-900">{s.username}</div>
+                            {s.real_ip && (
+                              <div className="text-xs text-gray-400 font-mono">{s.real_ip}</div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-start gap-2">
+                            <Monitor className="h-4 w-4 text-gray-400 mt-0.5" />
+                            <div>
+                              <div className="text-gray-700 text-xs">{s.device_name || 'Unknown'}</div>
+                              {s.client_version && (
+                                <div className="text-xs text-gray-400">{s.client_version}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-5 py-4 text-gray-500">{s.node_hostname}</td>
                         <td className="px-5 py-4 font-mono text-gray-600 text-xs">{s.vpn_ip}</td>
                         <td className="px-5 py-4 text-gray-500 text-xs" suppressHydrationWarning>
                           {formatDateTime(s.connected_at)}
                         </td>
                         <td className="px-5 py-4 text-gray-500" suppressHydrationWarning>
-                          {formatDuration(s.connected_at, s.disconnected_at)}
+                          {formatDuration(s.connected_at, s.disconnected_at, s.connection_duration_seconds)}
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2 text-xs">
@@ -192,9 +316,23 @@ export default function SessionsPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                            {s.disconnected_at ? 'Disconnected' : 'Active'}
-                          </span>
+                          {s.disconnect_reason ? (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                              s.disconnect_reason === 'normal' ? 'bg-gray-100 text-gray-600' :
+                              s.disconnect_reason === 'admin_kick' ? 'bg-red-100 text-red-700' :
+                              s.disconnect_reason === 'timeout' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {s.disconnect_reason === 'admin_kick' ? 'Kicked' :
+                               s.disconnect_reason === 'timeout' ? 'Timeout' :
+                               s.disconnect_reason === 'reconnect' ? 'Reconnected' :
+                               'Disconnected'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              {s.disconnected_at ? 'Disconnected' : 'Active'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -205,7 +343,11 @@ export default function SessionsPage() {
               {/* Pagination */}
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                  Page {page} • Showing {history.length} sessions
+                  {pagination ? (
+                    <>Page {pagination.page} of {pagination.pages} • {pagination.total} total sessions</>
+                  ) : (
+                    <>Page {page} • Showing {history.length} sessions</>
+                  )}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -221,7 +363,7 @@ export default function SessionsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => p + 1)}
-                    disabled={history.length < limit}
+                    disabled={pagination ? page >= pagination.pages : history.length < limit}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />

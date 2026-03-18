@@ -29,49 +29,119 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /api/v1/vpn/auth
    * Called by: vpn-login script (auth-user-pass-verify hook)
-   * Body: { username, password, node_id }
+   * Body: { username, password, node_id, real_ip, client_version, device_name }
    * Returns: 200 OK if credentials valid + user is active, else 401
    */
   app.post<{
-    Body: { username: string; password: string; node_id?: string }
+    Body: { 
+      username: string
+      password: string
+      node_id?: string
+      real_ip?: string
+      client_version?: string
+      device_name?: string
+    }
   }>(
     '/vpn/auth',
     { schema: { tags: ['vpn'], summary: 'Authenticate VPN user credentials' } },
     async (request, reply) => {
-      const { username, password, node_id } = request.body
+      const { username, password, node_id, real_ip, client_version, device_name } = request.body
 
       if (!username || !password) {
         return reply.status(400).send({ error: 'username and password required' })
       }
 
       const user = await app.db('users').where({ username }).first()
+      const clientIp = real_ip ?? request.ip
 
+      // Log failed attempt if user not found
       if (!user) {
-        app.log.warn(`[vpn/auth] Unknown user: ${username}`)
+        app.log.warn(`[vpn/auth] Unknown user: ${username} from ${clientIp}`)
+        
+        // Record failed attempt
+        await app.db('connection_attempts').insert({
+          id: crypto.randomUUID(),
+          user_id: null,
+          node_id: node_id ?? null,
+          username,
+          real_ip: clientIp,
+          failure_reason: 'invalid_credentials',
+          error_details: 'User not found',
+          attempted_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+        
         return reply.status(401).send({ error: 'Invalid credentials' })
       }
 
+      // Check if account is active
       if (!user.is_active) {
-        app.log.warn(`[vpn/auth] Inactive user: ${username}`)
+        app.log.warn(`[vpn/auth] Inactive user: ${username} from ${clientIp}`)
+        
+        await app.db('connection_attempts').insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          node_id: node_id ?? null,
+          username,
+          real_ip: clientIp,
+          failure_reason: 'account_disabled',
+          error_details: 'User account is disabled',
+          attempted_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+        
         return reply.status(403).send({ error: 'Account disabled' })
       }
 
       // Check validity window (valid_from / valid_to)
       const now = new Date()
       if (user.valid_from && new Date(user.valid_from) > now) {
+        await app.db('connection_attempts').insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          node_id: node_id ?? null,
+          username,
+          real_ip: clientIp,
+          failure_reason: 'account_not_active',
+          error_details: `Account not active until ${user.valid_from}`,
+          attempted_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+        
         return reply.status(403).send({ error: 'Account not yet active' })
       }
+      
       if (user.valid_to && new Date(user.valid_to) < now) {
+        await app.db('connection_attempts').insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          node_id: node_id ?? null,
+          username,
+          real_ip: clientIp,
+          failure_reason: 'account_expired',
+          error_details: `Account expired on ${user.valid_to}`,
+          attempted_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+        
         return reply.status(403).send({ error: 'Account expired' })
       }
 
       const passwordMatch = await bcrypt.compare(password, user.password)
       if (!passwordMatch) {
-        app.log.warn(`[vpn/auth] Bad password for user: ${username}`)
+        app.log.warn(`[vpn/auth] Bad password for user: ${username} from ${clientIp}`)
+        
+        await app.db('connection_attempts').insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          node_id: node_id ?? null,
+          username,
+          real_ip: clientIp,
+          failure_reason: 'invalid_password',
+          error_details: 'Password mismatch',
+          attempted_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+        
         return reply.status(401).send({ error: 'Invalid credentials' })
       }
 
-      // Log audit
+      // Log successful auth
       const logId = crypto.randomUUID()
       await app.db('audit_logs').insert({
         id: logId,
@@ -80,7 +150,11 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
         action: 'vpn_auth_success',
         resource_type: 'vpn_auth',
         resource_id: node_id ?? null,
-        ip_address: request.ip,
+        ip_address: clientIp,
+        metadata: JSON.stringify({
+          client_version,
+          device_name,
+        }),
         created_at: new Date(),
       }).catch(() => { /* non-fatal */ })
 
@@ -97,16 +171,24 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /api/v1/vpn/connect
    * Called by: vpn-connect script (client-connect hook)
-   * Body: { username, vpn_ip, node_id, common_name }
+   * Body: { username, vpn_ip, node_id, common_name, real_ip, client_version, device_name }
    * Opens a new session row in vpn_sessions.
    */
   app.post<{
-    Body: { username: string; vpn_ip: string; node_id: string; common_name?: string; real_ip?: string }
+    Body: { 
+      username: string
+      vpn_ip: string
+      node_id: string
+      common_name?: string
+      real_ip?: string
+      client_version?: string
+      device_name?: string
+    }
   }>(
     '/vpn/connect',
     { schema: { tags: ['vpn'], summary: 'Record VPN client connect event' } },
     async (request, reply) => {
-      const { username, vpn_ip, node_id, real_ip } = request.body
+      const { username, vpn_ip, node_id, real_ip, client_version, device_name } = request.body
 
       if (!username || !vpn_ip || !node_id) {
         return reply.status(400).send({ error: 'username, vpn_ip and node_id required' })
@@ -118,24 +200,64 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
       const node = await app.db('vpn_nodes').where({ id: node_id }).first()
       if (!node) return reply.status(404).send({ error: 'Node not found' })
 
+      const clientIp = real_ip ?? request.ip
+
       // Close any previously open session for this user (defensive)
-      await app.db('vpn_sessions')
+      const previousSessions = await app.db('vpn_sessions')
         .where({ user_id: user.id })
         .whereNull('disconnected_at')
-        .update({ disconnected_at: new Date() })
+      
+      if (previousSessions.length > 0) {
+        const now = new Date()
+        for (const session of previousSessions) {
+          const connectedAt = new Date(session.connected_at)
+          const durationSeconds = Math.floor((now.getTime() - connectedAt.getTime()) / 1000)
+          
+          await app.db('vpn_sessions')
+            .where({ id: session.id })
+            .update({
+              disconnected_at: now,
+              disconnect_reason: 'reconnect',
+              connection_duration_seconds: durationSeconds,
+            })
+        }
+      }
+
       const sessionId = crypto.randomUUID()
       await app.db('vpn_sessions').insert({
         id: sessionId,
         user_id: user.id,
         node_id: node.id,
         vpn_ip,
-        real_ip: real_ip ?? request.ip,
+        real_ip: clientIp,
+        client_version: client_version ?? null,
+        device_name: device_name ?? null,
         bytes_sent: 0,
         bytes_received: 0,
         connected_at: new Date(),
+        last_activity_at: new Date(),
       })
 
-      app.log.info(`[vpn/connect] ${username} connected — session ${sessionId}, IP ${vpn_ip}`)
+      app.log.info(`[vpn/connect] ${username} connected — session ${sessionId}, IP ${vpn_ip}, device: ${device_name ?? 'unknown'}`)
+
+      // Log audit
+      await app.db('audit_logs').insert({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        username: user.username,
+        action: 'vpn_connect',
+        resource_type: 'vpn_session',
+        resource_id: sessionId,
+        session_id: sessionId,
+        ip_address: clientIp,
+        metadata: JSON.stringify({
+          vpn_ip,
+          node_hostname: node.hostname,
+          client_version,
+          device_name,
+        }),
+        created_at: new Date(),
+      }).catch(() => { /* non-fatal */ })
 
       // Get user's policy networks for route push (response to agent)
       const networks = await app.db('vpn_policies as p')
@@ -155,16 +277,22 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /api/v1/vpn/disconnect
    * Called by: vpn-disconnect script (client-disconnect hook)
-   * Body: { username, node_id, bytes_sent, bytes_received }
+   * Body: { username, node_id, bytes_sent, bytes_received, disconnect_reason }
    * Closes the open session and records traffic stats.
    */
   app.post<{
-    Body: { username: string; node_id: string; bytes_sent?: number; bytes_received?: number }
+    Body: { 
+      username: string
+      node_id: string
+      bytes_sent?: number
+      bytes_received?: number
+      disconnect_reason?: string
+    }
   }>(
     '/vpn/disconnect',
     { schema: { tags: ['vpn'], summary: 'Record VPN client disconnect event' } },
     async (request, reply) => {
-      const { username, node_id, bytes_sent = 0, bytes_received = 0 } = request.body
+      const { username, node_id, bytes_sent = 0, bytes_received = 0, disconnect_reason = 'normal' } = request.body
 
       if (!username || !node_id) {
         return reply.status(400).send({ error: 'username and node_id required' })
@@ -173,18 +301,116 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
       const user = await app.db('users').where({ username }).first()
       if (!user) return reply.status(404).send({ error: 'User not found' })
 
-      const updated = await app.db('vpn_sessions')
+      // Get session to calculate duration
+      const session = await app.db('vpn_sessions')
         .where({ user_id: user.id, node_id })
         .whereNull('disconnected_at')
+        .first()
+
+      if (session) {
+        const now = new Date()
+        const connectedAt = new Date(session.connected_at)
+        const durationSeconds = Math.floor((now.getTime() - connectedAt.getTime()) / 1000)
+
+        await app.db('vpn_sessions')
+          .where({ id: session.id })
+          .update({
+            disconnected_at: now,
+            bytes_sent,
+            bytes_received,
+            disconnect_reason,
+            connection_duration_seconds: durationSeconds,
+          })
+
+        app.log.info(`[vpn/disconnect] ${username} disconnected — session ${session.id}, duration: ${durationSeconds}s, reason: ${disconnect_reason}`)
+
+        // Log audit
+        await app.db('audit_logs').insert({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          username: user.username,
+          action: 'vpn_disconnect',
+          resource_type: 'vpn_session',
+          resource_id: session.id,
+          session_id: session.id,
+          ip_address: session.real_ip,
+          metadata: JSON.stringify({
+            duration_seconds: durationSeconds,
+            bytes_sent,
+            bytes_received,
+            disconnect_reason,
+          }),
+          created_at: new Date(),
+        }).catch(() => { /* non-fatal */ })
+      }
+
+      return reply.status(200).send({ ok: true, sessions_closed: session ? 1 : 0 })
+    },
+  )
+
+  /**
+   * POST /api/v1/vpn/activity
+   * Called by: agent periodically to update session activity
+   * Body: { session_id, bytes_sent, bytes_received, latency_ms, packet_loss_percent }
+   * Records bandwidth and connection quality metrics
+   */
+  app.post<{
+    Body: {
+      session_id: string
+      bytes_sent: number
+      bytes_received: number
+      latency_ms?: number
+      packet_loss_percent?: number
+    }
+  }>(
+    '/vpn/activity',
+    { schema: { tags: ['vpn'], summary: 'Update session activity metrics' } },
+    async (request, reply) => {
+      const { session_id, bytes_sent, bytes_received, latency_ms, packet_loss_percent } = request.body
+
+      if (!session_id) {
+        return reply.status(400).send({ error: 'session_id required' })
+      }
+
+      // Update session last_activity_at and totals
+      const session = await app.db('vpn_sessions')
+        .where({ id: session_id })
+        .whereNull('disconnected_at')
+        .first()
+
+      if (!session) {
+        return reply.status(404).send({ error: 'Active session not found' })
+      }
+
+      const now = new Date()
+      
+      // Calculate deltas
+      const bytesSentDelta = bytes_sent - (session.bytes_sent || 0)
+      const bytesReceivedDelta = bytes_received - (session.bytes_received || 0)
+
+      // Update session
+      await app.db('vpn_sessions')
+        .where({ id: session_id })
         .update({
-          disconnected_at: new Date(),
+          last_activity_at: now,
           bytes_sent,
           bytes_received,
         })
 
-      app.log.info(`[vpn/disconnect] ${username} disconnected — ${updated} session(s) closed`)
+      // Record activity snapshot
+      await app.db('session_activities').insert({
+        id: crypto.randomUUID(),
+        session_id,
+        recorded_at: now,
+        bytes_sent_delta: bytesSentDelta,
+        bytes_received_delta: bytesReceivedDelta,
+        bytes_sent_total: bytes_sent,
+        bytes_received_total: bytes_received,
+        latency_ms: latency_ms ?? null,
+        packet_loss_percent: packet_loss_percent ?? null,
+      })
 
-      return reply.status(200).send({ ok: true, sessions_closed: updated })
+      return reply.status(200).send({ ok: true })
     },
   )
 }
