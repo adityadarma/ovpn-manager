@@ -114,16 +114,6 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { hostname, ip, port, region, version, registrationKey, config } = request.body
 
-      // Debug: Log incoming request
-      console.log('[node-register] Registration request received:', {
-        hostname,
-        ip,
-        hasRegistrationKey: !!registrationKey,
-        registrationKeyLength: registrationKey?.length,
-        registrationKeyPreview: registrationKey ? `${registrationKey.substring(0, 10)}...` : 'none',
-        hasAuthHeader: !!request.headers.authorization,
-      })
-
       // Check authentication: either JWT token (admin) or registration key
       const authHeader = request.headers.authorization
       let isAuthenticated = false
@@ -136,23 +126,15 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
           
           if (decoded.role === 'admin') {
             isAuthenticated = true
-            console.log('[node-register] Authenticated via JWT token (admin)')
           }
         } catch (err) {
-          console.log('[node-register] JWT validation failed, checking registration key')
+          // Invalid JWT, continue to check registration key
         }
       }
 
       // Method 2: Check registration key from environment
       if (!isAuthenticated) {
         const validRegistrationKey = process.env.NODE_REGISTRATION_KEY
-        
-        console.log('[node-register] Checking registration key:', {
-          hasEnvKey: !!validRegistrationKey,
-          envKeyLength: validRegistrationKey?.length,
-          envKeyPreview: validRegistrationKey ? `${validRegistrationKey.substring(0, 10)}...` : 'none',
-          providedKeyPreview: registrationKey ? `${registrationKey.substring(0, 10)}...` : 'none',
-        })
         
         if (!validRegistrationKey) {
           app.log.warn('[node-register] NODE_REGISTRATION_KEY not set in environment')
@@ -175,14 +157,6 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
         const trimmedValidKey = validRegistrationKey.trim()
 
         if (trimmedProvidedKey !== trimmedValidKey) {
-          console.error('[node-register] Registration key mismatch:', {
-            providedLength: trimmedProvidedKey.length,
-            expectedLength: trimmedValidKey.length,
-            providedPreview: `${trimmedProvidedKey.substring(0, 10)}...`,
-            expectedPreview: `${trimmedValidKey.substring(0, 10)}...`,
-            providedFull: trimmedProvidedKey,
-            expectedFull: trimmedValidKey,
-          })
           return reply.status(403).send({
             error: 'Forbidden',
             message: 'Invalid registration key',
@@ -190,7 +164,6 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
         }
 
         isAuthenticated = true
-        console.log('[node-register] Registration key validated successfully')
       }
 
       if (!isAuthenticated) {

@@ -335,10 +335,8 @@ EOF
     fi
     
     # Debug: Show what we're sending
-    echo "[DEBUG] Registration payload:" >&2
-    echo "$json_payload" | jq '.' 2>/dev/null || echo "$json_payload" >&2
     if [ "$auth_method" == "key" ]; then
-        echo "[DEBUG] Using registration key: ${auth_value:0:10}..." >&2
+        print_info "Sending registration request with key: ${auth_value:0:10}..."
     fi
     
     # Make API call
@@ -355,10 +353,6 @@ EOF
     
     http_code=$(echo "$response" | tail -n1)
     body=$(echo "$response" | sed '$d')
-    
-    # Debug: Show response
-    echo "[DEBUG] HTTP Status: $http_code" >&2
-    echo "[DEBUG] Response body: $body" >&2
     
     if [ "$http_code" == "201" ]; then
         # Parse response

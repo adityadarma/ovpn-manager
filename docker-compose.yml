@@ -80,6 +80,7 @@ services:
       WEB_URL: ${WEB_URL:-http://localhost:3000}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      NODE_REGISTRATION_KEY: ${NODE_REGISTRATION_KEY}
       DATABASE_TYPE: ${DATABASE_TYPE:-sqlite}
       DATABASE_URL: ${DATABASE_URL}
       DATABASE_SQLITE_PATH: /data/vpn.sqlite
