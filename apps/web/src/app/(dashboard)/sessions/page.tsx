@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 import { Activity, ArrowUp, ArrowDown, History, ChevronLeft, ChevronRight, Monitor, MapPin, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/hooks/use-toast'
 
 interface Session {
   id: string
@@ -75,7 +75,6 @@ function formatDateTime(date: string) {
 export default function SessionsPage() {
   const [page, setPage] = useState(1)
   const limit = 20
-  const { toast } = useToast()
   const queryClient = useQueryClient()
 
   const { data: sessions = [], isLoading } = useQuery<Session[]>({
@@ -92,18 +91,11 @@ export default function SessionsPage() {
   const kickMutation = useMutation({
     mutationFn: (sessionId: string) => api.post(`/api/v1/sessions/${sessionId}/kick`, {}),
     onSuccess: () => {
-      toast({
-        title: 'Session kicked',
-        description: 'User has been disconnected',
-      })
+      toast.success('Session kicked successfully')
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
     },
-    onError: (error: any) => {
-      toast({
-        title: 'Failed to kick session',
-        description: error.message || 'An error occurred',
-        variant: 'destructive',
-      })
+    onError: (e: Error) => {
+      toast.error(e.message || 'Failed to kick session')
     },
   })
 
