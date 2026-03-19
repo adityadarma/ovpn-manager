@@ -384,7 +384,7 @@ print_summary() {
     echo "  Backup:       $INSTALL_DIR/backup.sh"
     echo ""
     echo -e "${BLUE}Documentation:${NC}"
-    echo "  Full guide: https://github.com/adityadarma/vpn-manager/blob/main/PRODUCTION-INSTALL.md"
+    echo "  Full guide: https://github.com/adityadarma/vpn-manager/blob/main/docs/PRODUCTION-INSTALL.md"
     echo ""
 }
 

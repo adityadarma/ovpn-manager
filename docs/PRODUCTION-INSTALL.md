@@ -717,7 +717,7 @@ sudo systemctl reload nginx
 
 ## 📚 Additional Resources
 
-- [Full Docker Documentation](DOCKER.md)
+- [Full Docker Documentation](docs/DOCKER.md)
 - [Main README](README.md)
 - [GitHub Repository](https://github.com/adityadarma/vpn-manager)
 

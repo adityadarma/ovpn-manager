@@ -324,7 +324,7 @@ docker compose pull
 docker compose up -d
 ```
 
-**📚 See [DOCKER.md](DOCKER.md) for complete guide**
+**📚 See [DOCKER.md](docs/DOCKER.md) for complete guide**
 
 ## Available Scripts
 
@@ -342,8 +342,8 @@ From the root directory, you can utilize Turborepo and pnpm to manage the worksp
 ## 📚 Documentation
 
 - **[README.md](README.md)** - Project overview and quick start
-- **[DOCKER.md](DOCKER.md)** - Docker deployment guide (dev & production)
-- **[PRODUCTION-INSTALL.md](PRODUCTION-INSTALL.md)** - Production installation guide
+- **[DOCKER.md](docs/DOCKER.md)** - Docker deployment guide (dev & production)
+- **[PRODUCTION-INSTALL.md](docs/PRODUCTION-INSTALL.md)** - Production installation guide
 
 ---
 
