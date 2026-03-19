@@ -626,6 +626,105 @@ start_agent() {
         print_info "Check logs with: docker compose logs"
         exit 1
     fi
+    
+    # Wait a bit for container to be ready
+    sleep 3
+    
+    # Install VPN hooks from agent container to host
+    install_vpn_hooks
+}
+
+install_vpn_hooks() {
+    print_info "Installing VPN hooks..."
+    
+    # Check if agent container is running
+    if ! docker compose ps agent | grep -q "running"; then
+        print_warning "Agent container not running, skipping hook installation"
+        return 0
+    fi
+    
+    # Copy hooks from container to host
+    local hooks=("vpn-login" "vpn-connect" "vpn-disconnect")
+    local installed=0
+    
+    for hook in "${hooks[@]}"; do
+        if docker compose exec -T agent cat "/app/dist/bin/${hook}.js" > "/tmp/${hook}.js" 2>/dev/null; then
+            # Create wrapper script that calls node with the hook and loads env
+            cat > "/usr/local/bin/${hook}" <<'EOF'
+#!/bin/bash
+# VPN Manager Hook Wrapper
+# Loads environment from agent and executes hook
+
+# Load environment variables from agent .env file
+if [ -f "/opt/vpn-agent/.env" ]; then
+    export $(grep -v '^#' /opt/vpn-agent/.env | xargs)
+fi
+
+# Execute the hook with node
+exec node /opt/vpn-agent/hooks/HOOK_NAME.js "$@"
+EOF
+            # Replace HOOK_NAME placeholder
+            sed -i "s/HOOK_NAME/${hook}/g" "/usr/local/bin/${hook}"
+            chmod +x "/usr/local/bin/${hook}"
+            
+            # Copy the actual hook file
+            mkdir -p /opt/vpn-agent/hooks
+            mv "/tmp/${hook}.js" "/opt/vpn-agent/hooks/${hook}.js"
+            
+            installed=$((installed + 1))
+        else
+            print_warning "Failed to copy ${hook} from container"
+        fi
+    done
+    
+    if [ $installed -eq 3 ]; then
+        print_success "Installed $installed VPN hooks to /usr/local/bin/"
+        
+        # Update OpenVPN config to use hooks
+        update_openvpn_config_hooks
+    else
+        print_warning "Only installed $installed/3 hooks"
+    fi
+}
+
+update_openvpn_config_hooks() {
+    local config_file="/etc/openvpn/server/server.conf"
+    
+    if [ ! -f "$config_file" ]; then
+        print_warning "OpenVPN config not found at $config_file"
+        return 0
+    fi
+    
+    print_info "Updating OpenVPN config to use hooks..."
+    
+    # Backup original config
+    cp "$config_file" "${config_file}.backup-$(date +%Y%m%d-%H%M%S)"
+    
+    # Remove old hook lines if they exist
+    sed -i '/^auth-user-pass-verify/d' "$config_file"
+    sed -i '/^client-connect/d' "$config_file"
+    sed -i '/^client-disconnect/d' "$config_file"
+    sed -i '/^script-security/d' "$config_file"
+    
+    # Add new hook lines
+    cat >> "$config_file" <<EOF
+
+# VPN Manager Hooks
+script-security 2
+auth-user-pass-verify /usr/local/bin/vpn-login via-file
+client-connect /usr/local/bin/vpn-connect
+client-disconnect /usr/local/bin/vpn-disconnect
+username-as-common-name
+EOF
+    
+    print_success "OpenVPN config updated"
+    
+    # Restart OpenVPN to apply changes
+    if systemctl is-active --quiet openvpn-server@server; then
+        print_info "Restarting OpenVPN server..."
+        systemctl restart openvpn-server@server
+        print_success "OpenVPN server restarted"
+    fi
 }
 
 wait_for_agent() {

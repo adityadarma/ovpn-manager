@@ -217,14 +217,15 @@ systemctl stop vpn-agent
 If you prefer manual control:
 
 ```bash
+mkdir -p /opt/vpn-agent
+cd /opt/vpn-agent
+
 # 1. Install VPN server
 curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/vpn-server.sh -o vpn-server.sh
 chmod +x vpn-server.sh
 sudo ./vpn-server.sh install
 
 # 2. Download agent compose file
-mkdir -p /opt/vpn-agent
-cd /opt/vpn-agent
 wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/docker-compose.agent.yml -O docker-compose.yml
 wget https://raw.githubusercontent.com/adityadarma/vpn-manager/main/.env.agent -O .env
 

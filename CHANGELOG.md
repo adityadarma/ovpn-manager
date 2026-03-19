@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `POST /api/v1/vpn/activity` - Update session activity metrics
     - `GET /api/v1/audit/connection-attempts` - Failed connection attempts
     - `GET /api/v1/audit/connection-attempts/stats` - Failed attempts statistics
-  - See `docs/SESSION-LOGGING.md` for complete documentation
+  - Enhanced VPN hooks to send client_version, device_name, disconnect_reason
+  - Auto-install VPN hooks during agent installation
+  - Auto-update OpenVPN config to use hooks
 
 ### Changed
 - **Security Enhancement**: Upgraded from `tls-auth` to `tls-crypt` for better security
