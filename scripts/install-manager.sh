@@ -592,7 +592,7 @@ register_node() {
     local HOSTNAME=${HOSTNAME:-$(hostname)}
     local API_URL="http://localhost:${API_PORT:-3001}"
     
-    # Register node
+    # Try to register node
     RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/v1/nodes/register" \
         -H "Content-Type: application/json" \
         -d "{\"hostname\":\"$HOSTNAME\",\"ip\":\"$SERVER_IP\",\"port\":1194,\"version\":\"auto\",\"registrationKey\":\"$NODE_REGISTRATION_KEY\"}")
@@ -609,6 +609,33 @@ register_node() {
         sed -i "s|AGENT_SECRET_TOKEN=.*|AGENT_SECRET_TOKEN=$SECRET_TOKEN|" .env
         
         print_success "Node registered: $NODE_ID"
+        
+        # Export for use in other functions
+        export NODE_ID
+        export SECRET_TOKEN
+    elif [ "$HTTP_CODE" == "409" ]; then
+        # Node already exists - this is OK for reinstallation
+        print_warning "Node already registered (reinstallation detected)"
+        
+        echo ""
+        echo "Please provide existing node credentials:"
+        echo "You can find these in Web UI → Nodes → Select your node"
+        echo ""
+        read -p "Node ID: " NODE_ID </dev/tty
+        read -p "Secret Token: " SECRET_TOKEN </dev/tty
+        
+        if [ -z "$NODE_ID" ] || [ -z "$SECRET_TOKEN" ]; then
+            print_error "Node ID and Secret Token are required"
+            echo ""
+            echo "Alternative: Delete the existing node in Web UI first, then retry installation"
+            return 1
+        fi
+        
+        # Update .env with provided credentials
+        sed -i "s|AGENT_NODE_ID=.*|AGENT_NODE_ID=$NODE_ID|" .env
+        sed -i "s|AGENT_SECRET_TOKEN=.*|AGENT_SECRET_TOKEN=$SECRET_TOKEN|" .env
+        
+        print_success "Using existing node: $NODE_ID"
         
         # Export for use in other functions
         export NODE_ID
