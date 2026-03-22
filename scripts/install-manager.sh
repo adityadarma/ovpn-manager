@@ -176,7 +176,13 @@ configure_env() {
         WEB_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN:$WEB_PORT"
         API_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN:$API_PORT"
     else
-        # It's a domain - ask for ports but don't include in URL
+        # It's a domain - ask for separate domains for Web and API
+        echo ""
+        echo "Configure domains:"
+        echo "Example: Web UI = vpn.example.com, API = api.vpn.example.com"
+        read -p "API domain (default: api.$SERVER_DOMAIN): " API_DOMAIN </dev/tty
+        API_DOMAIN=${API_DOMAIN:-api.$SERVER_DOMAIN}
+        
         echo ""
         echo "Configure ports (for internal Docker configuration):"
         read -p "Web UI port (default: 3000): " WEB_PORT </dev/tty
@@ -185,7 +191,7 @@ configure_env() {
         API_PORT=${API_PORT:-3001}
         
         WEB_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN"
-        API_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN"
+        API_URL_VALUE="$PROTOCOL://$API_DOMAIN"
     fi
     
     # Generate VPN token and registration key

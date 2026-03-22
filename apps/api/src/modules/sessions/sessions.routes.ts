@@ -29,7 +29,7 @@ const sessionRoutes: FastifyPluginAsync = async (app) => {
           's.bytes_received',
           's.connected_at',
           's.last_activity_at',
-          app.db.raw('CAST((julianday("now") - julianday(s.connected_at)) * 86400 AS INTEGER) as duration_seconds'),
+          app.db.raw("CAST((julianday('now') - julianday(s.connected_at)) * 86400 AS INTEGER) as duration_seconds"),
         )
         .orderBy('s.connected_at', 'desc')
     },
