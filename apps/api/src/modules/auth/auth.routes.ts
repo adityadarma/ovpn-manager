@@ -118,7 +118,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ error: 'Bad Request', message: 'New password must be at least 6 characters' })
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 12)
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
       await app.db('users').where({ id: payload.id }).update({ password: hashedPassword, updated_at: new Date() })
 
       return { message: 'Password changed successfully' }

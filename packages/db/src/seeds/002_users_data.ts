@@ -9,7 +9,7 @@ export async function seed(knex: Knex): Promise<void> {
 
   if (!existingAdmin) {
     // Create default admin user
-    const passwordHash = await bcrypt.hash('Admin@1234!', 12)
+    const passwordHash = await bcrypt.hash('Admin@1234!', 10)
     await knex('users').insert({
       username: 'admin',
       email: 'admin@vpn.local',

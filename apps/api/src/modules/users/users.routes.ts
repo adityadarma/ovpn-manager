@@ -39,7 +39,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(409).send({ error: 'Conflict', message: 'Username already exists' })
       }
 
-      const passwordHash = await bcrypt.hash(input.password, 12)
+      const passwordHash = await bcrypt.hash(input.password, 10)
 
       const id = crypto.randomUUID()
 
@@ -83,7 +83,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
       }
 
       if (input.password) {
-        updates['password'] = await bcrypt.hash(input.password, 12)
+        updates['password'] = await bcrypt.hash(input.password, 10)
       }
 
       await app.db('users').where({ id }).update(updates)
@@ -442,7 +442,7 @@ const userRoutes: FastifyPluginAsync = async (app) => {
       
       // Build config with node-specific settings
       // Include auth-user-pass only if user requires password authentication
-      const authUserPass = user.require_password !== false ? 'auth-user-pass' : ''
+      const authUserPass = user.require_password !== false ? 'auth-user-pass\nauth-nocache' : ''
       
       let config = `client
 dev tun
