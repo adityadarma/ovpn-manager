@@ -154,13 +154,43 @@ configure_env() {
     read -p "Server domain/IP (default: $SERVER_IP): " SERVER_DOMAIN </dev/tty
     SERVER_DOMAIN=${SERVER_DOMAIN:-$SERVER_IP}
     
-    # Ask for protocol
+    # Ask for protocol first
+    echo ""
     read -p "Use HTTPS? [y/N]: " USE_HTTPS </dev/tty
     if [[ "$USE_HTTPS" == "y" || "$USE_HTTPS" == "Y" ]]; then
         PROTOCOL="https"
     else
         PROTOCOL="http"
     fi
+    
+    # Check if input is IP address or domain
+    if [[ "$SERVER_DOMAIN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        # It's an IP address - ask for ports and include in URL
+        echo ""
+        echo "Configure ports (will be included in URLs for IP address):"
+        read -p "Web UI port (default: 3000): " WEB_PORT </dev/tty
+        WEB_PORT=${WEB_PORT:-3000}
+        read -p "API port (default: 3001): " API_PORT </dev/tty
+        API_PORT=${API_PORT:-3001}
+        
+        WEB_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN:$WEB_PORT"
+        API_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN:$API_PORT"
+    else
+        # It's a domain - ask for ports but don't include in URL
+        echo ""
+        echo "Configure ports (for internal Docker configuration):"
+        read -p "Web UI port (default: 3000): " WEB_PORT </dev/tty
+        WEB_PORT=${WEB_PORT:-3000}
+        read -p "API port (default: 3001): " API_PORT </dev/tty
+        API_PORT=${API_PORT:-3001}
+        
+        WEB_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN"
+        API_URL_VALUE="$PROTOCOL://$SERVER_DOMAIN"
+    fi
+    
+    # Generate VPN token and registration key
+    VPN_TOKEN=$(openssl rand -hex 32)
+    NODE_REGISTRATION_KEY=$(openssl rand -hex 32)
     
     # Create .env file
     cat > .env << EOF
@@ -170,17 +200,25 @@ configure_env() {
 # ============================================================
 
 # ---- API ----
-API_PORT=3001
+API_PORT=${API_PORT:-3001}
 NODE_ENV=production
 
 # ---- CORS ----
 # IMPORTANT: Set this to the URL where users access the Web UI
 # Example: https://vpn.yourdomain.com or http://your-server-ip:3000
-WEB_URL=$PROTOCOL://$SERVER_DOMAIN:3000
+WEB_URL=$WEB_URL_VALUE
 
 # ---- JWT ----
 JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=7d
+
+# ---- Node Registration Security ----
+# Key for auto-registering VPN nodes (needed for node installation)
+NODE_REGISTRATION_KEY=$NODE_REGISTRATION_KEY
+
+# ---- VPN Hooks Authentication ----
+# Token for authenticating VPN hooks (vpn-login, vpn-connect, vpn-disconnect)
+VPN_TOKEN=$VPN_TOKEN
 
 # ---- Database ----
 DATABASE_TYPE=$DATABASE_TYPE
@@ -212,13 +250,13 @@ EOF
     cat >> .env << EOF
 
 # ---- Web UI ----
-WEB_PORT=3000
+WEB_PORT=${WEB_PORT:-3000}
 # IMPORTANT: This should be the full URL where API is accessible from user's browser
 # Example: https://api.yourdomain.com or http://your-server-ip:3001
-NEXT_PUBLIC_API_URL=$PROTOCOL://$SERVER_DOMAIN:3001
+NEXT_PUBLIC_API_URL=$API_URL_VALUE
 
 # ---- Agent (Optional - only needed when running agent) ----
-AGENT_MANAGER_URL=http://$SERVER_DOMAIN:3001
+AGENT_MANAGER_URL=$API_URL_VALUE
 AGENT_NODE_ID=change-me
 AGENT_SECRET_TOKEN=change-me
 AGENT_POLL_INTERVAL_MS=5000
@@ -237,6 +275,20 @@ Generated on $(date)
 JWT Secret: $JWT_SECRET
 
 Database Type: $DATABASE_TYPE
+
+============================================================
+VPN Node Installation Credentials
+============================================================
+These values are needed when installing VPN Node:
+
+VPN_TOKEN: $VPN_TOKEN
+NODE_REGISTRATION_KEY: $NODE_REGISTRATION_KEY
+
+Installation command:
+  MANAGER_URL=$API_URL_VALUE \\
+  VPN_TOKEN=$VPN_TOKEN \\
+  REG_KEY=$NODE_REGISTRATION_KEY \\
+  curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-node.sh | sudo bash
 EOF
 
     if [ "$DATABASE_TYPE" = "postgres" ]; then
@@ -256,8 +308,8 @@ EOF
 
     cat >> credentials.txt << EOF
 
-Web UI: $PROTOCOL://$SERVER_DOMAIN:3000
-API: $PROTOCOL://$SERVER_DOMAIN:3001
+Web UI: $WEB_URL_VALUE
+API: $API_URL_VALUE
 
 Default Admin Credentials:
 Username: admin
@@ -362,12 +414,22 @@ print_summary() {
     echo -e "${NC}"
     echo ""
     echo -e "${BLUE}Access Points:${NC}"
-    echo "  Web UI: $PROTOCOL://$SERVER_DOMAIN:3000"
-    echo "  API: $PROTOCOL://$SERVER_DOMAIN:3001"
+    echo "  Web UI: $WEB_URL_VALUE"
+    echo "  API: $API_URL_VALUE"
     echo ""
     echo -e "${BLUE}Default Credentials:${NC}"
     echo "  Username: admin"
     echo "  Password: Admin@1234!"
+    echo ""
+    echo -e "${BLUE}VPN Node Installation Credentials:${NC}"
+    echo "  VPN_TOKEN: $VPN_TOKEN"
+    echo "  NODE_REGISTRATION_KEY: $NODE_REGISTRATION_KEY"
+    echo ""
+    echo "  To install VPN Node, run on the VPN server:"
+    echo "  MANAGER_URL=$API_URL_VALUE \\"
+    echo "  VPN_TOKEN=$VPN_TOKEN \\"
+    echo "  REG_KEY=$NODE_REGISTRATION_KEY \\"
+    echo "  curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/install-node.sh | sudo bash"
     echo ""
     echo -e "${YELLOW}⚠️  IMPORTANT:${NC}"
     echo "  1. Change the default admin password immediately!"
