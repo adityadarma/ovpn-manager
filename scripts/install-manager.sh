@@ -396,8 +396,8 @@ EOF
 
 # ---- Agent (All-in-One Mode) ----
 AGENT_MANAGER_URL=$API_URL_VALUE
-AGENT_NODE_ID=$NODE_ID
-AGENT_SECRET_TOKEN=$SECRET_TOKEN
+AGENT_NODE_ID=pending-registration
+AGENT_SECRET_TOKEN=pending-registration
 AGENT_POLL_INTERVAL_MS=5000
 AGENT_HEARTBEAT_INTERVAL_MS=30000
 VPN_MANAGEMENT_HOST=host.docker.internal
@@ -419,22 +419,6 @@ EOF
     fi
 
     print_success "Environment configured"
-    
-    # Auto-register node if all-in-one mode
-    if [ "$INSTALL_AGENT" = true ]; then
-        print_info "Auto-registering VPN node..."
-        
-        # Wait a bit for variables to be set
-        sleep 1
-        
-        # Get server info
-        SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-        HOSTNAME=${HOSTNAME:-$(hostname)}
-        
-        # We'll register after services are up
-        NODE_ID=""
-        SECRET_TOKEN=""
-    fi
     
     # Save credentials to a secure file
     cat > credentials.txt << EOF
@@ -509,8 +493,17 @@ pull_images() {
 add_agent_to_compose() {
     print_info "Adding agent service to docker-compose..."
     
-    # Add agent service to docker-compose.yml
-    cat >> docker-compose.yml << 'EOF'
+    # Check if agent already exists
+    if grep -q "agent:" docker-compose.yml; then
+        print_warning "Agent service already exists in docker-compose.yml"
+        return
+    fi
+    
+    # Find the line number where we should insert (before networks section)
+    # We'll insert the agent service before the "networks:" line
+    if grep -q "^networks:" docker-compose.yml; then
+        # Create agent service definition
+        cat > /tmp/agent-service.yml << 'EOF'
 
   # ── VPN Agent (All-in-One Mode) ──
   agent:
@@ -545,9 +538,18 @@ add_agent_to_compose() {
       options:
         max-size: "10m"
         max-file: "3"
+
 EOF
-    
-    print_success "Agent service added to docker-compose"
+        
+        # Insert before networks section
+        sed -i '/^networks:/e cat /tmp/agent-service.yml' docker-compose.yml
+        rm -f /tmp/agent-service.yml
+        
+        print_success "Agent service added to docker-compose"
+    else
+        print_error "Could not find networks section in docker-compose.yml"
+        exit 1
+    fi
 }
 
 start_services() {
