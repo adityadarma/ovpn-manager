@@ -312,20 +312,89 @@ sleep 5
 
 # Install hooks
 info "Installing VPN hooks..."
-HOOKS=(vpn-login vpn-connect vpn-disconnect)
-for hook in "${HOOKS[@]}"; do
-    if docker compose exec -T agent cat "/app/dist/bin/${hook}.js" > "/tmp/${hook}.js" 2>/dev/null; then
-        cat > "/usr/local/bin/${hook}" <<'WRAPPER'
+
+# Load environment variables
+cd "$INSTALL_DIR"
+source .env
+
+# Create bash-based hooks (no Node.js required on host)
+
+# vpn-login hook
+cat > /usr/local/bin/vpn-login <<'EOF'
 #!/bin/bash
-[ -f "/opt/vpn-agent/.env" ] && export $(grep -v '^#' /opt/vpn-agent/.env | xargs)
-exec node /opt/vpn-agent/hooks/HOOK.js "$@"
-WRAPPER
-        sed -i "s/HOOK/${hook}/g" "/usr/local/bin/${hook}"
-        chmod +x "/usr/local/bin/${hook}"
-        mkdir -p /opt/vpn-agent/hooks
-        mv "/tmp/${hook}.js" "/opt/vpn-agent/hooks/${hook}.js"
-    fi
-done
+# VPN Login Hook - Authenticates user via API
+
+# Read username and password from stdin
+read -r USERNAME
+read -r PASSWORD
+
+# Load environment
+[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
+
+# Call API to authenticate
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/auth/login" \
+    -H "Content-Type: application/json" \
+    -H "X-VPN-Token: ${VPN_TOKEN}" \
+    -d "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}")
+
+HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+if [ "$HTTP_CODE" == "200" ]; then
+    exit 0
+else
+    exit 1
+fi
+EOF
+
+# vpn-connect hook
+cat > /usr/local/bin/vpn-connect <<'EOF'
+#!/bin/bash
+# VPN Connect Hook - Notifies API when user connects
+
+# Load environment
+[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
+
+# Call API to record connection
+curl -s -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/connect" \
+    -H "Content-Type: application/json" \
+    -H "X-VPN-Token: ${VPN_TOKEN}" \
+    -d "{
+        \"username\":\"${common_name}\",
+        \"vpn_ip\":\"${ifconfig_pool_remote_ip}\",
+        \"real_ip\":\"${trusted_ip}\",
+        \"node_id\":\"${AGENT_NODE_ID}\"
+    }" > /dev/null 2>&1
+
+exit 0
+EOF
+
+# vpn-disconnect hook
+cat > /usr/local/bin/vpn-disconnect <<'EOF'
+#!/bin/bash
+# VPN Disconnect Hook - Notifies API when user disconnects
+
+# Load environment
+[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
+
+# Call API to record disconnection
+curl -s -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/disconnect" \
+    -H "Content-Type: application/json" \
+    -H "X-VPN-Token: ${VPN_TOKEN}" \
+    -d "{
+        \"username\":\"${common_name}\",
+        \"vpn_ip\":\"${ifconfig_pool_remote_ip}\",
+        \"bytes_sent\":\"${bytes_sent}\",
+        \"bytes_received\":\"${bytes_received}\",
+        \"duration\":\"${time_duration}\"
+    }" > /dev/null 2>&1
+
+exit 0
+EOF
+
+# Make hooks executable
+chmod +x /usr/local/bin/vpn-login
+chmod +x /usr/local/bin/vpn-connect
+chmod +x /usr/local/bin/vpn-disconnect
 
 # Update OpenVPN config for hooks
 if ! grep -q "auth-user-pass-verify" /etc/openvpn/server/server.conf; then

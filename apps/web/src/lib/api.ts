@@ -15,6 +15,9 @@ function getApiUrl(): string {
 
 export const API_URL = getApiUrl()
 
+// Flag to prevent multiple redirects
+let isRedirecting = false
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = useAuthStore.getState().token
 
@@ -36,7 +39,11 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (res.status === 401) {
     useAuthStore.getState().logout()
-    if (typeof window !== 'undefined') window.location.href = '/login'
+    // Only redirect once to prevent multiple redirects
+    if (typeof window !== 'undefined' && !isRedirecting && !window.location.pathname.includes('/login')) {
+      isRedirecting = true
+      window.location.href = '/login'
+    }
     throw new Error('Unauthorized')
   }
 

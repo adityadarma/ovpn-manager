@@ -47,8 +47,8 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { username, password, node_id, real_ip, client_version, device_name } = request.body
 
-      if (!username || !password) {
-        return reply.status(400).send({ error: 'username and password required' })
+      if (!username) {
+        return reply.status(400).send({ error: 'username required' })
       }
 
       const user = await app.db('users').where({ username }).first()
@@ -90,7 +90,7 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
         
         return reply.status(403).send({ error: 'Account disabled' })
       }
-
+      
       // Check validity window (valid_from / valid_to)
       const now = new Date()
       if (user.valid_from && new Date(user.valid_from) > now) {
@@ -123,22 +123,32 @@ const vpnRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(403).send({ error: 'Account expired' })
       }
 
-      const passwordMatch = await bcrypt.compare(password, user.password)
-      if (!passwordMatch) {
-        app.log.warn(`[vpn/auth] Bad password for user: ${username} from ${clientIp}`)
+      // If user requires password authentication, validate it
+      if (user.require_password !== false) {
+        if (!password) {
+          return reply.status(400).send({ error: 'password required for this user' })
+        }
         
-        await app.db('connection_attempts').insert({
-          id: crypto.randomUUID(),
-          user_id: user.id,
-          node_id: node_id ?? null,
-          username,
-          real_ip: clientIp,
-          failure_reason: 'invalid_password',
-          error_details: 'Password mismatch',
-          attempted_at: new Date(),
-        }).catch(() => { /* non-fatal */ })
-        
-        return reply.status(401).send({ error: 'Invalid credentials' })
+        const passwordMatch = await bcrypt.compare(password, user.password)
+        if (!passwordMatch) {
+          app.log.warn(`[vpn/auth] Bad password for user: ${username} from ${clientIp}`)
+          
+          await app.db('connection_attempts').insert({
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            node_id: node_id ?? null,
+            username,
+            real_ip: clientIp,
+            failure_reason: 'invalid_password',
+            error_details: 'Password mismatch',
+            attempted_at: new Date(),
+          }).catch(() => { /* non-fatal */ })
+          
+          return reply.status(401).send({ error: 'Invalid credentials' })
+        }
+      } else {
+        // Certificate-only mode: skip password validation
+        app.log.info(`[vpn/auth] Certificate-only auth for user: ${username}`)
       }
 
       // Log successful auth
