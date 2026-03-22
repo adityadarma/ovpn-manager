@@ -231,8 +231,11 @@ tail -f /var/log/openvpn/openvpn.log
 # Update agent
 curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/update-node.sh | sudo bash
 
-# Uninstall everything
+# Uninstall node
 curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-node.sh | sudo bash
+
+# Uninstall manager (full)
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash -s -- --full
 ```
 
 ### Manual Installation

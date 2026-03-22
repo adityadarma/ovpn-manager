@@ -95,14 +95,31 @@ curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/script
 Remove VPN Manager completely.
 
 **Usage:**
+
+Interactive mode (download first):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh -o uninstall.sh
+chmod +x uninstall.sh
+sudo ./uninstall.sh
 ```
 
-**What it does:**
-- Stops Manager services
-- Removes containers and volumes
-- Cleans up files
+Auto mode - Full uninstall (remove everything):
+```bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash -s -- --full
+```
+
+Auto mode - Keep data (remove app, keep databases):
+```bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash -s -- --keep-data
+```
+
+**What it removes:**
+- Docker containers (API, Web, Agent if all-in-one)
+- OpenVPN installation (if all-in-one mode)
+- VPN hooks and configuration
+- Docker volumes (optional)
+- Docker images (optional)
+- Installation directory (optional)
 
 ---
 

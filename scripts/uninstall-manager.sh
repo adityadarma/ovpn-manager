@@ -3,7 +3,11 @@
 # VPN Manager - Production Uninstallation Script
 # ============================================================
 # This script removes VPN Manager installation
-# Usage: sudo bash /opt/vpn-manager/scripts/uninstall-prod.sh
+# 
+# Usage:
+#   Interactive: sudo ./uninstall-manager.sh
+#   Auto (full): sudo bash uninstall-manager.sh --full
+#   Auto (keep data): sudo bash uninstall-manager.sh --keep-data
 # ============================================================
 
 set -e
@@ -16,6 +20,18 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 INSTALL_DIR="/opt/vpn-manager"
+
+# Parse arguments
+AUTO_MODE=false
+KEEP_DATA=false
+
+if [ "$1" = "--full" ]; then
+    AUTO_MODE=true
+    KEEP_DATA=false
+elif [ "$1" = "--keep-data" ]; then
+    AUTO_MODE=true
+    KEEP_DATA=true
+fi
 
 print_header() {
     echo -e "${RED}"
@@ -49,8 +65,13 @@ check_root() {
 }
 
 confirm_uninstall() {
+    if [ "$AUTO_MODE" = true ]; then
+        print_warning "Running in automatic mode"
+        return 0
+    fi
+    
     echo ""
-    print_warning "This will remove OpenVPN Manager and optionally delete all data!"
+    print_warning "This will remove VPN Manager and optionally delete all data!"
     echo ""
     read -p "Are you sure you want to continue? (yes/no): " confirm
     
@@ -83,9 +104,14 @@ check_openvpn() {
 
 remove_openvpn() {
     if check_openvpn; then
-        echo ""
-        print_warning "Detected OpenVPN installation (All-in-One mode)"
-        read -p "Do you want to remove OpenVPN and VPN Node? (yes/no): " remove_vpn
+        if [ "$AUTO_MODE" = true ]; then
+            remove_vpn="yes"
+            remove_config="yes"
+        else
+            echo ""
+            print_warning "Detected OpenVPN installation (All-in-One mode)"
+            read -p "Do you want to remove OpenVPN and VPN Node? (yes/no): " remove_vpn
+        fi
         
         if [ "$remove_vpn" = "yes" ]; then
             print_info "Removing OpenVPN..."
@@ -111,8 +137,10 @@ remove_openvpn() {
             
             print_success "OpenVPN removed"
             
-            echo ""
-            read -p "Do you want to remove OpenVPN configuration and certificates? (yes/no): " remove_config
+            if [ "$AUTO_MODE" = false ]; then
+                echo ""
+                read -p "Do you want to remove OpenVPN configuration and certificates? (yes/no): " remove_config
+            fi
             
             if [ "$remove_config" = "yes" ]; then
                 print_info "Removing OpenVPN configuration..."
@@ -130,8 +158,12 @@ remove_openvpn() {
 }
 
 remove_volumes() {
-    echo ""
-    read -p "Do you want to delete all data (databases, volumes)? (yes/no): " delete_data
+    if [ "$AUTO_MODE" = true ]; then
+        delete_data=$( [ "$KEEP_DATA" = true ] && echo "no" || echo "yes" )
+    else
+        echo ""
+        read -p "Do you want to delete all data (databases, volumes)? (yes/no): " delete_data
+    fi
     
     if [ "$delete_data" = "yes" ]; then
         print_info "Removing Docker volumes..."
@@ -147,13 +179,19 @@ remove_volumes() {
 }
 
 remove_images() {
-    echo ""
-    read -p "Do you want to remove Docker images? (yes/no): " remove_imgs
+    if [ "$AUTO_MODE" = true ]; then
+        remove_imgs="yes"
+    else
+        echo ""
+        read -p "Do you want to remove Docker images? (yes/no): " remove_imgs
+    fi
     
     if [ "$remove_imgs" = "yes" ]; then
         print_info "Removing Docker images..."
         
-        docker rmi $(docker images | grep vpn-manager | awk '{print $3}') 2>/dev/null || true
+        docker rmi ghcr.io/adityadarma/vpn-manager:api 2>/dev/null || true
+        docker rmi ghcr.io/adityadarma/vpn-manager:web 2>/dev/null || true
+        docker rmi ghcr.io/adityadarma/vpn-manager:agent 2>/dev/null || true
         
         print_success "Images removed"
     else
@@ -162,6 +200,10 @@ remove_images() {
 }
 
 backup_before_remove() {
+    if [ "$AUTO_MODE" = true ]; then
+        return 0
+    fi
+    
     echo ""
     read -p "Do you want to create a backup before uninstalling? (yes/no): " create_backup
     
@@ -177,8 +219,12 @@ backup_before_remove() {
 }
 
 remove_install_dir() {
-    echo ""
-    read -p "Do you want to remove installation directory ($INSTALL_DIR)? (yes/no): " remove_dir
+    if [ "$AUTO_MODE" = true ]; then
+        remove_dir="yes"
+    else
+        echo ""
+        read -p "Do you want to remove installation directory ($INSTALL_DIR)? (yes/no): " remove_dir
+    fi
     
     if [ "$remove_dir" = "yes" ]; then
         print_info "Removing installation directory..."
@@ -190,21 +236,28 @@ remove_install_dir() {
 }
 
 remove_cron_jobs() {
-    print_info "Checking for cron jobs..."
-    
-    if crontab -l 2>/dev/null | grep -q "vpn"; then
-        print_warning "Found VPN-related cron jobs"
-        echo ""
-        crontab -l | grep "vpn"
-        echo ""
-        read -p "Remove these cron jobs? (yes/no): " remove_cron
+    if [ "$AUTO_MODE" = true ]; then
+        remove_cron="yes"
+    else
+        print_info "Checking for cron jobs..."
         
-        if [ "$remove_cron" = "yes" ]; then
+        if crontab -l 2>/dev/null | grep -q "vpn"; then
+            print_warning "Found VPN-related cron jobs"
+            echo ""
+            crontab -l | grep "vpn"
+            echo ""
+            read -p "Remove these cron jobs? (yes/no): " remove_cron
+        else
+            print_info "No cron jobs found"
+            return 0
+        fi
+    fi
+    
+    if [ "$remove_cron" = "yes" ]; then
+        if crontab -l 2>/dev/null | grep -q "vpn"; then
             crontab -l | grep -v "vpn" | crontab -
             print_success "Cron jobs removed"
         fi
-    else
-        print_info "No cron jobs found"
     fi
 }
 

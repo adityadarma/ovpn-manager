@@ -167,8 +167,21 @@ curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/script
 
 ### Uninstall Manager
 
+**Interactive mode (recommended):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh -o uninstall.sh
+chmod +x uninstall.sh
+sudo ./uninstall.sh
+```
+
+**Auto mode - Full uninstall:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash -s -- --full
+```
+
+**Auto mode - Keep data:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/scripts/uninstall-manager.sh | sudo bash -s -- --keep-data
 ```
 
 ---
