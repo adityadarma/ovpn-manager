@@ -172,6 +172,12 @@ INSTALL_DIR="/opt/vpn-agent"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
+# Check if agent already running
+if docker ps | grep -q vpn-agent; then
+    warn "Agent already running. Stopping..."
+    docker compose down 2>/dev/null || true
+fi
+
 info "Downloading agent files..."
 curl -fsSL https://raw.githubusercontent.com/adityadarma/vpn-manager/main/docker-compose.agent.yml -o docker-compose.yml
 ok "Files downloaded"
@@ -188,6 +194,22 @@ if [ -n "$VPN_TOKEN" ]; then
 fi
 if [ -n "$REG_KEY" ]; then
     info "Detected REG_KEY: ${REG_KEY:0:10}..."
+fi
+
+# Check if .env already exists
+if [ -f ".env" ]; then
+    warn "Existing .env found. Backing up..."
+    cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
+    
+    # Load existing values if no new values provided
+    if [ -z "$MANAGER_URL" ]; then
+        source .env
+        MANAGER_URL=$AGENT_MANAGER_URL
+        NODE_ID=$AGENT_NODE_ID
+        SECRET_TOKEN=$AGENT_SECRET_TOKEN
+        VPN_TOKEN=$VPN_TOKEN
+        info "Using existing configuration"
+    fi
 fi
 
 # Configure environment
@@ -317,97 +339,48 @@ info "Installing VPN hooks..."
 cd "$INSTALL_DIR"
 source .env
 
-# Create bash-based hooks (no Node.js required on host)
+# Create symlink for consistent path (safe to run multiple times)
+ln -sf "$INSTALL_DIR/.env" /opt/vpn-manager/.env
 
-# vpn-login hook
-cat > /usr/local/bin/vpn-login <<'EOF'
-#!/bin/bash
-# VPN Login Hook - Authenticates user via API
+# Download bash hooks from GitHub (agent scripts)
+REPO_URL="https://raw.githubusercontent.com/adityadarma/vpn-manager/main/apps/agent/scripts"
 
-# Read username and password from stdin
-read -r USERNAME
-read -r PASSWORD
-
-# Load environment
-[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
-
-# Call API to authenticate
-RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/auth/login" \
-    -H "Content-Type: application/json" \
-    -H "X-VPN-Token: ${VPN_TOKEN}" \
-    -d "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}")
-
-HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-
-if [ "$HTTP_CODE" == "200" ]; then
-    exit 0
-else
-    exit 1
-fi
-EOF
-
-# vpn-connect hook
-cat > /usr/local/bin/vpn-connect <<'EOF'
-#!/bin/bash
-# VPN Connect Hook - Notifies API when user connects
-
-# Load environment
-[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
-
-# Call API to record connection
-curl -s -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/connect" \
-    -H "Content-Type: application/json" \
-    -H "X-VPN-Token: ${VPN_TOKEN}" \
-    -d "{
-        \"username\":\"${common_name}\",
-        \"vpn_ip\":\"${ifconfig_pool_remote_ip}\",
-        \"real_ip\":\"${trusted_ip}\",
-        \"node_id\":\"${AGENT_NODE_ID}\"
-    }" > /dev/null 2>&1
-
-exit 0
-EOF
-
-# vpn-disconnect hook
-cat > /usr/local/bin/vpn-disconnect <<'EOF'
-#!/bin/bash
-# VPN Disconnect Hook - Notifies API when user disconnects
-
-# Load environment
-[ -f "/opt/vpn-agent/.env" ] && source /opt/vpn-agent/.env
-
-# Call API to record disconnection
-curl -s -X POST "${AGENT_MANAGER_URL}/api/v1/vpn/disconnect" \
-    -H "Content-Type: application/json" \
-    -H "X-VPN-Token: ${VPN_TOKEN}" \
-    -d "{
-        \"username\":\"${common_name}\",
-        \"vpn_ip\":\"${ifconfig_pool_remote_ip}\",
-        \"bytes_sent\":\"${bytes_sent}\",
-        \"bytes_received\":\"${bytes_received}\",
-        \"duration\":\"${time_duration}\"
-    }" > /dev/null 2>&1
-
-exit 0
-EOF
-
-# Make hooks executable
-chmod +x /usr/local/bin/vpn-login
-chmod +x /usr/local/bin/vpn-connect
-chmod +x /usr/local/bin/vpn-disconnect
+for hook in vpn-login vpn-connect vpn-disconnect; do
+    # Backup existing hook if different
+    if [ -f "/usr/local/bin/${hook}" ]; then
+        TEMP_HOOK=$(mktemp)
+        curl -fsSL "$REPO_URL/${hook}.sh" -o "$TEMP_HOOK"
+        
+        if ! cmp -s "$TEMP_HOOK" "/usr/local/bin/${hook}"; then
+            warn "Updating ${hook} (backing up old version)"
+            cp "/usr/local/bin/${hook}" "/usr/local/bin/${hook}.backup.$(date +%Y%m%d_%H%M%S)"
+            mv "$TEMP_HOOK" "/usr/local/bin/${hook}"
+            chmod +x "/usr/local/bin/${hook}"
+        else
+            rm "$TEMP_HOOK"
+        fi
+    else
+        curl -fsSL "$REPO_URL/${hook}.sh" -o "/usr/local/bin/${hook}"
+        chmod +x "/usr/local/bin/${hook}"
+    fi
+done
 
 # Update OpenVPN config for hooks
 if ! grep -q "auth-user-pass-verify" /etc/openvpn/server/server.conf; then
+    info "Adding VPN hooks to OpenVPN config..."
     cat >> /etc/openvpn/server/server.conf <<'EOF'
 
-# VPN Hooks
+# VPN Manager Authentication
+username-as-common-name
 auth-user-pass-verify /usr/local/bin/vpn-login via-file
 client-connect /usr/local/bin/vpn-connect
 client-disconnect /usr/local/bin/vpn-disconnect
-username-as-common-name
 EOF
     systemctl restart openvpn-server@server.service 2>/dev/null || \
     systemctl restart openvpn@server.service 2>/dev/null
+    ok "OpenVPN config updated"
+else
+    ok "VPN hooks already configured in OpenVPN"
 fi
 
 ok "Hooks installed"
@@ -423,14 +396,18 @@ echo ""
 echo "OpenVPN: Running on UDP port 1194"
 echo "Agent: Running in Docker"
 echo "Node ID: $NODE_ID"
+echo "Environment: /opt/vpn-manager/.env"
 echo ""
 echo "Useful commands:"
 echo "  Check agent: docker logs vpn-agent"
 echo "  Check VPN: systemctl status openvpn-server@server"
 echo "  View logs: tail -f /var/log/openvpn/openvpn.log"
+echo "  Test auth: echo -e 'admin\\nAdmin@1234!' > /tmp/t && /usr/local/bin/vpn-login /tmp/t && rm /tmp/t"
 echo ""
 echo "Next steps:"
 echo "  1. Login to Web UI"
 echo "  2. Check node status (should be Online)"
 echo "  3. Create users and download configs"
+echo ""
+echo "Note: Safe to run this script again for updates/reinstall"
 echo ""
